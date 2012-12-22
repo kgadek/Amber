@@ -1,0 +1,14 @@
+{application, amber,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, [amber_sup, driver_sup, comm_sup, router]},
+  {modules, [amber, amber_sup, comm_sup, db, driver, driver_sup, qc_node, qc_node_echo, router, udpserver]},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  mnesia
+                 ]},
+  {mod, { amber, []}},
+  {env, []}
+ ]}.

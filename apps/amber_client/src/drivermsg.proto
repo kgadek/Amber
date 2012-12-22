@@ -1,0 +1,49 @@
+package amber;
+option java_package = "amber.proto";
+option java_outer_classname = "AmberProto";
+
+option optimize_for = SPEED;
+
+enum DeviceType { 
+  	NINEDOF = 1;
+  	ROBOCLAW = 2;
+  	STARGAZER = 3;
+  }
+
+message DriverHdr {
+	
+	optional int32 deviceType = 1;	 			// rodzaj urządzenia
+	optional int32 deviceID = 2; 					// numer instancji urządzenia
+	repeated int32 clientIDs = 3 [packed = true]; 	// adres klienta/klientów
+}
+
+message DriverMsg {
+  enum MsgType {
+  	DATA 		= 1;
+  	PING 		= 2;
+  	PONG 		= 3;
+  	CLIENT_DIED	= 4;
+  	DRIVER_DIED	= 5;
+  
+    //OKAY        =  1; // wszystko ok
+    //ZONK        =  2; // coś nie tak
+    //TIMEOUT     =  3; // przekroczenie limitu czasu
+    //MEASURMENT  =  4; // dane pomiarowe z urządzenia
+    //CONTROL     =  5; // polecenie sterowania urządzeniem
+    //HELLO       =  6; // rejestracja klienta u mediatora
+    //DEVS_REQ    =  7; // pobranie listy modułów
+    //DEVS_LST    =  8; // lista modułów
+    //DEV_LISTEN  =  9; // (A) nasłuch na danym module
+    //DEV_LEAVE   = 10; // (AI) koniec nasłuchu na podanym module
+    //DEV_TAKE    = 11; // (A) wyłączność do zapisu do urządzenia
+    //DEV_RELEASE = 12; // (AI) oddanie zapisu od urządzenia
+    //KTHXBYE     = 13; // wylogowanie klienta od mediatora
+  }
+    
+  required MsgType type     = 2;                 // Typ wiadomości
+  optional uint32 synNum    = 3;
+  optional uint32 ackNum    = 4;
+  //optional int32 ext_id     = 5;                 // Numer rozszerzenia
+  extensions 8 to 63;
+}
+

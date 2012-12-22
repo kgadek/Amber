@@ -1,0 +1,59 @@
+[![Build Status](https://travis-ci.org/kgadek/playground_amber.png?branch=master) "Master branch"](http://github.com/kgadek/playground_amber)
+
+[![Build Status](https://travis-ci.org/kgadek/playground_amber.png?branch=develop) "Develop branch"](http://github.com/kgadek/playground_amber)
+
+                                                          bbbbbbbb                                                      
+                   AAA                                    b::::::b            EEEEEEEEEEEEEEEEEEEEEE                    
+                  A:::A                                   b::::::b            E::::::::::::::::::::E                    
+                 A:::::A                                  b::::::b            E::::::::::::::::::::E                    
+                A:::::::A                                  b:::::b            EE::::::EEEEEEEEE::::E                    
+               A:::::::::A            mmmmmmm    mmmmmmm   b:::::bbbbbbbbb      E:::::E       EEEEEErrrrr   rrrrrrrrr   
+              A:::::A:::::A         mm:::::::m  m:::::::mm b::::::::::::::bb    E:::::E             r::::rrr:::::::::r  
+             A:::::A A:::::A       m::::::::::mm::::::::::mb::::::::::::::::b   E::::::EEEEEEEEEE   r:::::::::::::::::r 
+            A:::::A   A:::::A      m::::::::::::::::::::::mb:::::bbbbb:::::::b  E:::::::::::::::E   rr::::::rrrrr::::::r
+           A:::::A     A:::::A     m:::::mmm::::::mmm:::::mb:::::b    b::::::b  E:::::::::::::::E    r:::::r     r:::::r
+          A:::::AAAAAAAAA:::::A    m::::m   m::::m   m::::mb:::::b     b:::::b  E::::::EEEEEEEEEE    r:::::r     rrrrrrr
+         A:::::::::::::::::::::A   m::::m   m::::m   m::::mb:::::b     b:::::b  E:::::E              r:::::r            
+        A:::::AAAAAAAAAAAAA:::::A  m::::m   m::::m   m::::mb:::::b     b:::::b  E:::::E       EEEEEE r:::::r            
+       A:::::A             A:::::A m::::m   m::::m   m::::mb:::::bbbbbb::::::bEE::::::EEEEEEEE:::::E r:::::r            
+      A:::::A               A:::::Am::::m   m::::m   m::::mb::::::::::::::::b E::::::::::::::::::::E r:::::r            
+     A:::::A                 A:::::A::::m   m::::m   m::::mb:::::::::::::::b  E::::::::::::::::::::E r:::::r            
+    AAAAAAA                   AAAAAAAmmmm   mmmmmm   mmmmmmbbbbbbbbbbbbbbbb   EEEEEEEEEEEEEEEEEEEEEE rrrrrrr            
+                                                                                                                      
+
+# Projekt "Amber"
+
+Projekt inżynierski Konrada Gądka i Michała Konarskiego. Składa się z
+
+  - mediatora (Erlang)
+  - sterowników urządzeń (C/C++)
+  - aplikacji klienckich (Erlang, Java)
+
+
+
+## Dwa słowa o testach.
+
+Wow. Istnieją.
+
+
+### Pierwsze uruchomienie
+
+1. `make world` # ściąga zależności, kompiluje całość projektu
+1. `make test` # testy
+
+
+### Kolejne uruchomienia
+
+1. `make` # kompiluje ew. zmiany, pomija kompilację zależności
+1. `make test` # testy
+
+
+
+## Git workflow
+
+Warto przeglądnąć artykuł [A successful Git branching model](http://nvie.com/posts/a-successful-git-branching-model/).
+Poniższy obrazek prezentuje koncept. Może wydawać się to skomplikowane, ale takim nie jest.
+Opcja `--no-ff` została domyślnie ustawiona na branche `master` oraz `develop`.
+
+![Workflow](http://nvie.com/img/2009/12/Screen-shot-2009-12-24-at-11.32.03.png)
+

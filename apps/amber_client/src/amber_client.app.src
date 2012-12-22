@@ -1,0 +1,14 @@
+{application, amber_client,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, [amber_client]},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  mnesia,
+                  amber
+                 ]},
+  {mod, { amber_client_app, []}},
+  {env, []}
+ ]}.
