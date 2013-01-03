@@ -102,28 +102,30 @@ get_synnum() -> gen_server:call(?MODULE, get_synnum).
 										 | {motors_command_keys_bool(),   boolean()} ])
 			-> 'ok'.
 motors_command(Os) ->
-	Front = #motorscommand{
-		m1speed    = proplists:get_value(front_m1_speed,    Os),
-  	m1accel    = proplists:get_value(front_m1_accel,    Os),
-  	m1distance = proplists:get_value(front_m1_distance, Os),
-  	m1buffered = proplists:get_value(front_m1_buffered, Os),
-  	m2speed    = proplists:get_value(front_m2_speed,    Os),
-		m2accel    = proplists:get_value(front_m2_accel,    Os),
-		m2distance = proplists:get_value(front_m2_distance, Os),
-		m2buffered = proplists:get_value(front_m2_buffered, Os)
+	Rear = #motorscommand{
+		address = 16#80,
+		m1speed    = proplists:get_value(rear_right_speed,    Os),
+  	m1accel    = proplists:get_value(rear_right_accel,    Os),
+  	m1distance = proplists:get_value(rear_right_distance, Os),
+  	m1buffered = proplists:get_value(rear_right_buffered, Os),
+  	m2speed    = proplists:get_value(rear_left_speed,    Os),
+		m2accel    = proplists:get_value(rear_left_accel,    Os),
+		m2distance = proplists:get_value(rear_left_distance, Os),
+		m2buffered = proplists:get_value(rear_left_buffered, Os)
   },
-  Rear = #motorscommand{
-		m1speed    = proplists:get_value(rear_m1_speed,     Os),
-  	m1accel    = proplists:get_value(rear_m1_accel,     Os),
-  	m1distance = proplists:get_value(rear_m1_distance,  Os),
-  	m1buffered = proplists:get_value(rear_m1_buffered,  Os),
-  	m2speed    = proplists:get_value(rear_m2_speed,     Os),
-		m2accel    = proplists:get_value(rear_m2_accel,     Os),
-		m2distance = proplists:get_value(rear_m2_distance,  Os),
-		m2buffered = proplists:get_value(rear_m2_buffered,  Os)
+  Front = #motorscommand{
+  	address = 16#81,
+		m1speed    = proplists:get_value(front_right_speed,     Os),
+  	m1accel    = proplists:get_value(front_right_accel,     Os),
+  	m1distance = proplists:get_value(front_right_distance,  Os),
+  	m1buffered = proplists:get_value(front_right_buffered,  Os),
+  	m2speed    = proplists:get_value(front_left_speed,     Os),
+		m2accel    = proplists:get_value(front_left_accel,     Os),
+		m2distance = proplists:get_value(front_left_distance,  Os),
+		m2buffered = proplists:get_value(front_left_buffered,  Os)
   },
 	MsgBase = #drivermsg{type = 'DATA', synnum = get_synnum()},
-	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Front, Rear]),
+	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Rear, Front]),
 	MsgBinary = roboclaw_pb:encode_drivermsg(Msg),
 	{DevT,DevI} = ?ROBOCLAW_TI,
 	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
