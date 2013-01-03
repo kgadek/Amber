@@ -14,7 +14,7 @@
 -export([start_link/0]).
 
 -define(ROBOCLAW_TI, {1,2}).
--export([motors_command/1]).
+-export([motors_command/1, motors_command/2]).
 
 -define(STARGAZER_TI, {0,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
@@ -143,6 +143,27 @@ motors_command(Os) ->
 	{DevT,DevI} = ?ROBOCLAW_TI,
 	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
 	send_to_amber(Hdr, MsgBinary).
+
+%% @doc Uproszczone sterowanie robotem.
+%% @equiv motors_command([{front_right_speed, Right}, {rear_right_speed, Right}, {front_left_speed, Left}, {rear_left_speed, Left} ]).
+motors_command(Left, Right) ->
+  motors_command([
+                 	 {front_right_speed, Right},
+                 	 {front_left_speed,  Left},
+                 	 {rear_right_speed,  Right},
+                 	 {rear_left_speed,   Left}
+                 ]).
+
+motors_demo1() ->
+	timer:start(), %% todo: dependency!
+	timer:apply_after(1000, ?MODULE, motors_command, [1000, 1000]),
+	timer:apply_after(2000, ?MODULE, motors_command, [1000, -1000]),
+	timer:apply_after(3000, ?MODULE, motors_command, [1000, 1000]),
+	timer:apply_after(4000, ?MODULE, motors_command, [1000, -1000]),
+	timer:apply_after(5000, ?MODULE, motors_command, [1000, 1000]),
+	timer:apply_after(6000, ?MODULE, motors_command, [0000, 0000]),
+	timer:sleep(7000). 
+
 
 
 stargazer_order_position() -> stargazer_order_position([]).
