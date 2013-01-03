@@ -93,6 +93,19 @@ send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
 get_synnum() -> gen_server:call(?MODULE, get_synnum).
 
 
+%% -----------------------------------------------------------------------------
+%% @doc Podstawowa procedura do poruszania robotem.
+%%
+%% Funkcja nieblokująca. Wysyła żądanie poruszania się kół robota.
+%% Jednostką prędkości jest mm/s.
+%%
+%% Teoretycznie 12000 pulsów/s to maksimum możliwości enkodera i silników.
+%% Empirycznie stwierdzona prędkość maksymalna to około 2200 mm/s.
+%%
+%% Funkcja może zwrócić błąd jedynie w wypadku błędu protobuf, np. gdy podamy
+%% string zamiast int.
+%% @end
+%% -----------------------------------------------------------------------------
 -type motors_command_keys_int32()  :: 'front_m1_speed' | 'front_m2_speed' | 'rear_m1_speed' | 'rear_m2_speed'.
 -type motors_command_keys_uint32() :: 'front_m1_accel' | 'front_m1_distance' | 'front_m2_accel' | 'front_m2_distance' |
 															        'rear_m1_accel'  | 'rear_m1_distance'  | 'rear_m2_accel'  | 'rear_m2_distance'.
