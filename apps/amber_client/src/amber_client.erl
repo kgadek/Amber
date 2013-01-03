@@ -13,8 +13,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 
--define(ROBOCLAW_TI, {1,2}).
--export([motors_command/1, motors_command/2]).
+-define(ROBOCLAW_TI, {2,0}).
+-export([motors_command/1, motors_command/2, motors_demo1/0]).
 
 -define(STARGAZER_TI, {0,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
