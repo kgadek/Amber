@@ -7,7 +7,6 @@
                   kernel,
                   stdlib,
                   mnesia,
-                  timer,
                   amber
                  ]},
   {mod, { amber_client_app, []}},
