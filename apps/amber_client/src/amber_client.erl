@@ -178,6 +178,8 @@ stargazer_order_position(Os) ->
 	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
 	{ok, Msg} = stargazer_pb:set_extension(MsgBase, datarequest, #datarequest{}),
 	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
+	Dbg = stargazer_pb:decode_drivermsg(MsgBinary),
+	io:format("amber_client:stargazer_order_position/1: MsgBinary=~p Dbg=~p~n", [MsgBinary, Dbg]), 
 	{DefDevT,DefDevI} = ?STARGAZER_TI,
 	DevT = proplists:get_value(device_type, Os, DefDevT),
 	DevI = proplists:get_value(device_id, Os, DefDevI), 
