@@ -16,7 +16,7 @@
 -define(ROBOCLAW_TI, {2,0}).
 -export([motors_command/1, motors_command/2, motors_demo1/0]).
 
--define(STARGAZER_TI, {0,0}).
+-define(STARGAZER_TI, {3,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
@@ -42,7 +42,7 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict
 	{Hdr, MsgB} = router:unpack_msg(Msg),
 	#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr,
 	#drivermsg{synnum=SynNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
-
+	io:format("amber_client:handle_info({udp...}...): Mam Hdr=~p, SynNum=~p~n", [Hdr, SynNum]), 
 	NDict = case gb_trees:lookup({DevT, DevI, SynNum}, Dict) of
 						{value, RecPid} ->
 							case process_info(RecPid) of
