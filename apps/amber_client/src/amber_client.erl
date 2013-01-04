@@ -21,8 +21,19 @@
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
 
+
 -type int32()  :: -2147483648..2147483647.
 -type uint32() :: 0..4294967295.
+
+
+%% Teraz to de facto kopia localizationdata, ale dzięki temu umożliwiamy sobie
+%% zmianę protokołu kiedyś.
+-record(localization, {xpos     :: float(),
+        							 ypos     :: float(),
+        							 zpos     :: float(),
+        							 angle    :: float(),
+        							 markerid :: uint32()}).
+
 
 
 start() -> application:start(?MODULE).
@@ -191,13 +202,14 @@ stargazer_order_position(Os) ->
 stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 
 -spec stargazer_get_position(stargazer_order_position_future_ref(), timeout())
-			-> #drivermsg{}.
+			-> #localizationdata{}.
 stargazer_get_position(SynNum, Timeout) ->
 	{DevT, DevI} = ?STARGAZER_TI,
 	receive {amber_client_msg, RecTime, DevT, DevI, SynNum, MsgB} ->
-		Msg = stargazer_pb:decode_localizationdata(MsgB),
 		Msg = stargazer_pb:decode_drivermsg(MsgB),
-		{RecTime, Msg}
+		#localizationdata{xpos=X, ypos=Y, zpos=Z,
+											angle=A, markerid=M}= stargazer_pb:get_extension(Msg, localizationdata),
+		{RecTime, #localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M}}
 	after Timeout ->
 		error(stargazer_get_position_timeout)
 	end.

@@ -37,7 +37,6 @@ handle_info({Port, {data, HdrPB}}, #state{port=Port, mid=MID} = State) ->
   receive
     {Port, {data, Msg}} ->
       Hdr = drivermsg_pb:decode_driverhdr(list_to_binary(HdrPB)),
-      io:format("Mam Hdr=~p, czekam na msg~n", [Hdr]),
       router:send_msg({?MODULE, MID}, #routing_msg{hdr=Hdr, msg=list_to_binary(Msg)})
   after 100 -> erlang:error("Po headerze nie odebrano treści wiadomości") 
   end,
