@@ -197,6 +197,21 @@ stargazer_order_position(Os) ->
 	send_to_amber(Hdr, MsgBinary),
 	SynNum.
 
+stargazer_subscribe_position(Os) ->
+	SynNum = get_synnum(),
+	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
+	{ok, Msg} = stargazer_pb:set_extension(MsgBase, subscribeaction, #subscribeaction{action = 'SUBSCRIBE',
+	                                       																						freq = proplists:get_value(freq, Os, 100) }),
+	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
+	{DefDevT,DefDevI} = ?STARGAZER_TI,
+	DevT = proplists:get_value(device_type, Os, DefDevT),
+	DevI = proplists:get_value(device_id, Os, DefDevI), 
+	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
+	OrderedBy = proplists:get_value(pid, Os, self()), 
+	register_receiver({DevT, DevI, SynNum}, OrderedBy),
+	send_to_amber(Hdr, MsgBinary),
+	SynNum.
+
 
 stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 
@@ -212,3 +227,7 @@ stargazer_get_position(SynNum, Timeout) ->
 	after Timeout ->
 		error(stargazer_get_position_timeout)
 	end.
+
+
+
+
