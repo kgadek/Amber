@@ -36,17 +36,10 @@ Projekt inżynierski Konrada Gądka i Michała Konarskiego. Składa się z
 Wow. Istnieją.
 
 
-### Pierwsze uruchomienie
+## Kompilacja
 
-1. `make world` # ściąga zależności, kompiluje całość projektu
+1. `make` # ściąga zależności, kompiluje projekt
 1. `make test` # testy
-
-
-### Kolejne uruchomienia
-
-1. `make` # kompiluje ew. zmiany, pomija kompilację zależności
-1. `make test` # testy
-
 
 
 ## Git workflow
