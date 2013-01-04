@@ -6,6 +6,9 @@ REBARFLAGS = -j 5
 all: deps
 	$(REBAR) $(REBARFLAGS) compile
 
+fast:
+	$(REBAR) $(REBARFLAGS) skip_deps=true compile
+
 deps:
 	$(REBAR) $(REBARFLAGS) get-deps
 

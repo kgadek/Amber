@@ -16,13 +16,24 @@
 -define(ROBOCLAW_TI, {2,0}).
 -export([motors_command/1, motors_command/2, motors_demo1/0]).
 
--define(STARGAZER_TI, {0,0}).
+-define(STARGAZER_TI, {3,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
 
+
 -type int32()  :: -2147483648..2147483647.
 -type uint32() :: 0..4294967295.
+
+
+%% Teraz to de facto kopia localizationdata, ale dzięki temu umożliwiamy sobie
+%% zmianę protokołu kiedyś.
+-record(localization, {xpos     :: float(),
+        							 ypos     :: float(),
+        							 zpos     :: float(),
+        							 angle    :: float(),
+        							 markerid :: uint32()}).
+
 
 
 start() -> application:start(?MODULE).
@@ -41,15 +52,14 @@ terminate(_Reason, #state{socket = Socket}) -> gen_udp:close(Socket).
 handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict=Dict} = State) ->
 	{Hdr, MsgB} = router:unpack_msg(Msg),
 	#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr,
-	#drivermsg{synnum=SynNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
-
-	NDict = case gb_trees:lookup({DevT, DevI, SynNum}, Dict) of
+	#drivermsg{acknum=AckNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
+	NDict = case gb_trees:lookup({DevT, DevI, AckNum}, Dict) of
 						{value, RecPid} ->
 							case process_info(RecPid) of
 								undefined ->
-									gb_trees:delete_any({DevT, DevI, SynNum}, Dict);
+									gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
 								_ ->
-									RecPid ! {amber_client_msg, now(), DevT, DevI, SynNum, MsgB},
+									RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
 									Dict
 							end;
 						none ->
@@ -62,7 +72,7 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict
 																							[?AMBERIP, ?AMBERPORT, Msg, State]),
 											gb_trees:delete_any({DevT, DevI}, Dict);
 										_ ->
-											RecPid ! {amber_client_msg, now(), DevT, DevI, SynNum, MsgB},
+											RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
 											Dict
 									end
 							end
@@ -191,12 +201,14 @@ stargazer_order_position(Os) ->
 stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 
 -spec stargazer_get_position(stargazer_order_position_future_ref(), timeout())
-			-> #drivermsg{}.
+			-> #localizationdata{}.
 stargazer_get_position(SynNum, Timeout) ->
 	{DevT, DevI} = ?STARGAZER_TI,
 	receive {amber_client_msg, RecTime, DevT, DevI, SynNum, MsgB} ->
 		Msg = stargazer_pb:decode_drivermsg(MsgB),
-		{RecTime, Msg}
+		{ok, #localizationdata{xpos=X, ypos=Y, zpos=Z,
+													 angle=A, markerid=M}}   = stargazer_pb:get_extension(Msg, localizationdata),
+		{RecTime, #localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M}}
 	after Timeout ->
 		error(stargazer_get_position_timeout)
 	end.
