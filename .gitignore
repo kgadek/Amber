@@ -3,3 +3,5 @@ apps/*/ebin
 apps/*/priv
 apps/*/.eunit
 *.sublime-workspace
+*.dump
+*.beam

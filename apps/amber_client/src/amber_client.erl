@@ -13,8 +13,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 
--define(ROBOCLAW_TI, {1,2}).
--export([motors_command/1]).
+-define(ROBOCLAW_TI, {2,0}).
+-export([motors_command/1, motors_command/2, motors_demo1/0]).
 
 -define(STARGAZER_TI, {0,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
@@ -93,6 +93,19 @@ send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
 get_synnum() -> gen_server:call(?MODULE, get_synnum).
 
 
+%% -----------------------------------------------------------------------------
+%% @doc Podstawowa procedura do poruszania robotem.
+%%
+%% Funkcja nieblokująca. Wysyła żądanie poruszania się kół robota.
+%% Jednostką prędkości jest mm/s.
+%%
+%% Teoretycznie 12000 pulsów/s to maksimum możliwości enkodera i silników.
+%% Empirycznie stwierdzona prędkość maksymalna to około 2200 mm/s.
+%%
+%% Funkcja może zwrócić błąd jedynie w wypadku błędu protobuf, np. gdy podamy
+%% string zamiast int.
+%% @end
+%% -----------------------------------------------------------------------------
 -type motors_command_keys_int32()  :: 'front_m1_speed' | 'front_m2_speed' | 'rear_m1_speed' | 'rear_m2_speed'.
 -type motors_command_keys_uint32() :: 'front_m1_accel' | 'front_m1_distance' | 'front_m2_accel' | 'front_m2_distance' |
 															        'rear_m1_accel'  | 'rear_m1_distance'  | 'rear_m2_accel'  | 'rear_m2_distance'.
@@ -102,32 +115,55 @@ get_synnum() -> gen_server:call(?MODULE, get_synnum).
 										 | {motors_command_keys_bool(),   boolean()} ])
 			-> 'ok'.
 motors_command(Os) ->
-	Front = #motorscommand{
-		m1speed    = proplists:get_value(front_m1_speed,    Os),
-  	m1accel    = proplists:get_value(front_m1_accel,    Os),
-  	m1distance = proplists:get_value(front_m1_distance, Os),
-  	m1buffered = proplists:get_value(front_m1_buffered, Os),
-  	m2speed    = proplists:get_value(front_m2_speed,    Os),
-		m2accel    = proplists:get_value(front_m2_accel,    Os),
-		m2distance = proplists:get_value(front_m2_distance, Os),
-		m2buffered = proplists:get_value(front_m2_buffered, Os)
+	Rear = #motorscommand{
+		address = 16#80,
+		m1speed    = proplists:get_value(rear_right_speed,    Os),
+  	m1accel    = proplists:get_value(rear_right_accel,    Os),
+  	m1distance = proplists:get_value(rear_right_distance, Os),
+  	m1buffered = proplists:get_value(rear_right_buffered, Os),
+  	m2speed    = proplists:get_value(rear_left_speed,    Os),
+		m2accel    = proplists:get_value(rear_left_accel,    Os),
+		m2distance = proplists:get_value(rear_left_distance, Os),
+		m2buffered = proplists:get_value(rear_left_buffered, Os)
   },
-  Rear = #motorscommand{
-		m1speed    = proplists:get_value(rear_m1_speed,     Os),
-  	m1accel    = proplists:get_value(rear_m1_accel,     Os),
-  	m1distance = proplists:get_value(rear_m1_distance,  Os),
-  	m1buffered = proplists:get_value(rear_m1_buffered,  Os),
-  	m2speed    = proplists:get_value(rear_m2_speed,     Os),
-		m2accel    = proplists:get_value(rear_m2_accel,     Os),
-		m2distance = proplists:get_value(rear_m2_distance,  Os),
-		m2buffered = proplists:get_value(rear_m2_buffered,  Os)
+  Front = #motorscommand{
+  	address = 16#81,
+		m1speed    = proplists:get_value(front_right_speed,     Os),
+  	m1accel    = proplists:get_value(front_right_accel,     Os),
+  	m1distance = proplists:get_value(front_right_distance,  Os),
+  	m1buffered = proplists:get_value(front_right_buffered,  Os),
+  	m2speed    = proplists:get_value(front_left_speed,     Os),
+		m2accel    = proplists:get_value(front_left_accel,     Os),
+		m2distance = proplists:get_value(front_left_distance,  Os),
+		m2buffered = proplists:get_value(front_left_buffered,  Os)
   },
 	MsgBase = #drivermsg{type = 'DATA', synnum = get_synnum()},
-	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Front, Rear]),
+	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Rear, Front]),
 	MsgBinary = roboclaw_pb:encode_drivermsg(Msg),
 	{DevT,DevI} = ?ROBOCLAW_TI,
 	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
 	send_to_amber(Hdr, MsgBinary).
+
+%% @doc Uproszczone sterowanie robotem.
+%% @equiv motors_command([{front_right_speed, Right}, {rear_right_speed, Right}, {front_left_speed, Left}, {rear_left_speed, Left} ]).
+motors_command(Left, Right) ->
+  motors_command([
+                 	 {front_right_speed, Right},
+                 	 {front_left_speed,  Left},
+                 	 {rear_right_speed,  Right},
+                 	 {rear_left_speed,   Left}
+                 ]).
+
+motors_demo1() ->
+	timer:start(), %% todo: dependency!
+	timer:apply_after(1000, ?MODULE, motors_command, [1000, 1000]),
+	timer:apply_after(2000, ?MODULE, motors_command, [1000, -1000]),
+	timer:apply_after(3000, ?MODULE, motors_command, [1000, 1000]),
+	timer:apply_after(4000, ?MODULE, motors_command, [1000, -1000]),
+	timer:apply_after(5000, ?MODULE, motors_command, [1000, 1000]),
+	timer:apply_after(6000, ?MODULE, motors_command, [0000, 0000]),
+	timer:sleep(7000). 
+
 
 
 stargazer_order_position() -> stargazer_order_position([]).
