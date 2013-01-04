@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/kgadek/playground_amber.png?branch=master) "Master branch"](http://github.com/kgadek/playground_amber)
+[![Build Status](https://travis-ci.org/kgadek/Amber.png?branch=master) "Master branch"](http://github.com/kgadek/Amber)
 
-[![Build Status](https://travis-ci.org/kgadek/playground_amber.png?branch=develop) "Develop branch"](http://github.com/kgadek/playground_amber)
+[![Build Status](https://travis-ci.org/kgadek/Amber.png?branch=develop) "Develop branch"](http://github.com/kgadek/Amber)
 
                                                           bbbbbbbb                                                      
                    AAA                                    b::::::b            EEEEEEEEEEEEEEEEEEEEEE                    

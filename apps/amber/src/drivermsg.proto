@@ -19,11 +19,16 @@ message DriverHdr {
 
 message DriverMsg {
   enum MsgType {
-  	DATA 		= 1;
-  	PING 		= 2;
-  	PONG 		= 3;
-  	CLIENT_DIED	= 4;
-  	DRIVER_DIED	= 5;
+  	DATA 		         = 1;
+  	PING 		         = 2;
+  	PONG 		         = 3;
+  	CLIENT_DIED	     = 4;
+  	DRIVER_DIED	     = 5;
+    HELLO            = 6;
+    HELO_ACK         = 7;
+    HELLO_RST        = 8;
+    DRIVER_NOT_FOUND = 9;
+
   
     //OKAY        =  1; // wszystko ok
     //ZONK        =  2; // coś nie tak

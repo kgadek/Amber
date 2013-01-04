@@ -19,11 +19,16 @@ message DriverHdr {
 
 message DriverMsg {
   enum MsgType {
-  	DATA 		= 1;
-  	PING 		= 2;
-  	PONG 		= 3;
-  	CLIENT_DIED	= 4;
-  	DRIVER_DIED	= 5;
+  	DATA 		         = 1;
+  	PING 		         = 2;
+  	PONG 		         = 3;
+  	CLIENT_DIED	     = 4;
+  	DRIVER_DIED	     = 5;
+    HELLO            = 6;
+    HELO_ACK         = 7;
+    HELLO_RST        = 8;
+    DRIVER_NOT_FOUND = 9;
+
   
     //OKAY        =  1; // wszystko ok
     //ZONK        =  2; // coś nie tak
@@ -43,6 +48,7 @@ message DriverMsg {
   required MsgType type     = 2;                 // Typ wiadomości
   optional uint32 synNum    = 3;
   optional uint32 ackNum    = 4;
+  optional uint32 listenerNum = 5;
   //optional int32 ext_id     = 5;                 // Numer rozszerzenia
   extensions 8 to 63;
 }
