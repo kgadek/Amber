@@ -200,8 +200,9 @@ stargazer_order_position(Os) ->
 	SynNum.
 
 stargazer_subscribe_position(Os) ->
-	SynNum = get_synnum(),
-	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
+	% SynNum = get_synnum(),
+	SynNum = 0, % tak, to będzie zmienione
+ 	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
 	{ok, Msg} = stargazer_pb:set_extension(MsgBase, subscribeaction, #subscribeaction{action = 'SUBSCRIBE',
 	                                       																						freq = proplists:get_value(freq, Os, 100) }),
 	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
