@@ -5,3 +5,4 @@ apps/*/.eunit
 *.sublime-workspace
 *.dump
 *.beam
+*.log

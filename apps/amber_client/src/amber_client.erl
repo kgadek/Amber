@@ -17,7 +17,8 @@
 -export([motors_command/1, motors_command/2, motors_demo1/0]).
 
 -define(STARGAZER_TI, {3,0}).
--export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
+-export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2,
+         stargazer_subscribe_position/1]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
 
@@ -57,7 +58,8 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict
 						{value, RecPid} ->
 							case process_info(RecPid) of
 								undefined ->
-									gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
+									Dict;
+									% gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
 								_ ->
 									RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
 									Dict
