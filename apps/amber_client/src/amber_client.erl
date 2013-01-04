@@ -41,15 +41,15 @@ terminate(_Reason, #state{socket = Socket}) -> gen_udp:close(Socket).
 handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict=Dict} = State) ->
 	{Hdr, MsgB} = router:unpack_msg(Msg),
 	#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr,
-	#drivermsg{synnum=SynNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
-	io:format("amber_client:handle_info({udp...}...): Mam Hdr=~p, SynNum=~p~n", [Hdr, SynNum]), 
-	NDict = case gb_trees:lookup({DevT, DevI, SynNum}, Dict) of
+	#drivermsg{acknum=AckNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
+	io:format("amber_client:handle_info({udp...}...): Mam Hdr=~p, AckNum=~p~n", [Hdr, AckNum]), 
+	NDict = case gb_trees:lookup({DevT, DevI, AckNum}, Dict) of
 						{value, RecPid} ->
 							case process_info(RecPid) of
 								undefined ->
-									gb_trees:delete_any({DevT, DevI, SynNum}, Dict);
+									gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
 								_ ->
-									RecPid ! {amber_client_msg, now(), DevT, DevI, SynNum, MsgB},
+									RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
 									Dict
 							end;
 						none ->
@@ -62,7 +62,7 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict
 																							[?AMBERIP, ?AMBERPORT, Msg, State]),
 											gb_trees:delete_any({DevT, DevI}, Dict);
 										_ ->
-											RecPid ! {amber_client_msg, now(), DevT, DevI, SynNum, MsgB},
+											RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
 											Dict
 									end
 							end
