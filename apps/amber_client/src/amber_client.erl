@@ -188,7 +188,6 @@ stargazer_order_position(Os) ->
 	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
 	{ok, Msg} = stargazer_pb:set_extension(MsgBase, datarequest, #datarequest{}),
 	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
-	Dbg = stargazer_pb:decode_drivermsg(MsgBinary),
 	{DefDevT,DefDevI} = ?STARGAZER_TI,
 	DevT = proplists:get_value(device_type, Os, DefDevT),
 	DevI = proplists:get_value(device_id, Os, DefDevI), 
@@ -207,8 +206,8 @@ stargazer_get_position(SynNum, Timeout) ->
 	{DevT, DevI} = ?STARGAZER_TI,
 	receive {amber_client_msg, RecTime, DevT, DevI, SynNum, MsgB} ->
 		Msg = stargazer_pb:decode_drivermsg(MsgB),
-		#localizationdata{xpos=X, ypos=Y, zpos=Z,
-											angle=A, markerid=M}= stargazer_pb:get_extension(Msg, localizationdata),
+		{ok, #localizationdata{xpos=X, ypos=Y, zpos=Z,
+													 angle=A, markerid=M}}   = stargazer_pb:get_extension(Msg, localizationdata),
 		{RecTime, #localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M}}
 	after Timeout ->
 		error(stargazer_get_position_timeout)
