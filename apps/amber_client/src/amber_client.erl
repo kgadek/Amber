@@ -42,7 +42,6 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict
 	{Hdr, MsgB} = router:unpack_msg(Msg),
 	#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr,
 	#drivermsg{acknum=AckNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
-	io:format("amber_client:handle_info({udp...}...): Mam Hdr=~p, AckNum=~p~n", [Hdr, AckNum]), 
 	NDict = case gb_trees:lookup({DevT, DevI, AckNum}, Dict) of
 						{value, RecPid} ->
 							case process_info(RecPid) of
@@ -179,7 +178,6 @@ stargazer_order_position(Os) ->
 	{ok, Msg} = stargazer_pb:set_extension(MsgBase, datarequest, #datarequest{}),
 	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
 	Dbg = stargazer_pb:decode_drivermsg(MsgBinary),
-	io:format("amber_client:stargazer_order_position/1: MsgBinary=~p Dbg=~p~n", [MsgBinary, Dbg]), 
 	{DefDevT,DefDevI} = ?STARGAZER_TI,
 	DevT = proplists:get_value(device_type, Os, DefDevT),
 	DevI = proplists:get_value(device_id, Os, DefDevI), 
@@ -197,6 +195,7 @@ stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 stargazer_get_position(SynNum, Timeout) ->
 	{DevT, DevI} = ?STARGAZER_TI,
 	receive {amber_client_msg, RecTime, DevT, DevI, SynNum, MsgB} ->
+		Msg = stargazer_pb:decode_localizationdata(MsgB),
 		Msg = stargazer_pb:decode_drivermsg(MsgB),
 		{RecTime, Msg}
 	after Timeout ->
