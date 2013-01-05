@@ -1,0 +1,5 @@
+-ifndef(COMMON_H).
+-define(COMMON_H, true).
+-type int32()  :: -2147483648..2147483647.
+-type uint32() :: 0..4294967295.
+-endif.

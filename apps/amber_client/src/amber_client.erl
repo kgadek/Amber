@@ -4,18 +4,21 @@
 -include("include/drivermsg_pb.hrl").
 -include("include/roboclaw_pb.hrl").
 -include("include/stargazer_pb.hrl").
+-include("include/common.hrl").
+-include("include/motors_control.hrl").
+-include("include/localization_data.hrl").
 
 -define(AMBERIP, {127,0,0,1}).
 -define(AMBERPORT, 26233).
 -define(CLIENTPORT, 26232).
 
--export([start/0]).
+% gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
-
+% ROBOCLAW
 -define(ROBOCLAW_TI, {2,0}).
--export([motors_command/1, motors_command/2, motors_demo1/0]).
-
+-export([motors_command/1, motors_command/2, motors_command/4, motors_demo1/0]).
+% STARGAZER
 -define(STARGAZER_TI, {3,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2,
          stargazer_subscribe_position/1]).
@@ -23,23 +26,7 @@
 -record(state, {aip, aport, socket, dict, synnumnext}).
 
 
--type int32()  :: -2147483648..2147483647.
--type uint32() :: 0..4294967295.
-
-
-%% Teraz to de facto kopia localizationdata, ale dzięki temu umożliwiamy sobie
-%% zmianę protokołu kiedyś.
--record(localization, {xpos     :: float(),
-        							 ypos     :: float(),
-        							 zpos     :: float(),
-        							 angle    :: float(),
-        							 markerid :: uint32()}).
-
-
-
-start() -> application:start(?MODULE).
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, {?AMBERIP, ?AMBERPORT}, []).
-
 
 init({AmberIP, AmberPort}) ->
 	{ok, Socket} = gen_udp:open(?CLIENTPORT, [binary]),
@@ -58,8 +45,7 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict
 						{value, RecPid} ->
 							case process_info(RecPid) of
 								undefined ->
-									Dict;
-									% gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
+									gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
 								_ ->
 									RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
 									Dict
@@ -95,7 +81,14 @@ handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
 code_change(_OldV, State, _Extra) -> {ok, State}.
 
 
-%% API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ ROBOCLAW ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 register_receiver(Key, Pid) -> gen_server:call(?MODULE, {register_receiver, Key, Pid}).
 
@@ -116,12 +109,19 @@ get_synnum() -> gen_server:call(?MODULE, get_synnum).
 %%
 %% Funkcja może zwrócić błąd jedynie w wypadku błędu protobuf, np. gdy podamy
 %% string zamiast int.
+%%
+%% @deprecated Ze względu na format wejścia jest "overly-verbose" oraz
+%% stosunkowo powolna. Zalecam użycie {@link motors_command/4}.
 %% @end
 %% -----------------------------------------------------------------------------
--type motors_command_keys_int32()  :: 'front_m1_speed' | 'front_m2_speed' | 'rear_m1_speed' | 'rear_m2_speed'.
--type motors_command_keys_uint32() :: 'front_m1_accel' | 'front_m1_distance' | 'front_m2_accel' | 'front_m2_distance' |
-															        'rear_m1_accel'  | 'rear_m1_distance'  | 'rear_m2_accel'  | 'rear_m2_distance'.
--type motors_command_keys_bool()   :: 'front_m1_buffered' | 'front_m2_buffered' | 'rear_m1_buffered' | 'rear_m2_buffered'.
+-type motors_command_keys_int32()  :: 'front_m1_speed'    | 'front_m2_speed'
+																		| 'rear_m1_speed'     | 'rear_m2_speed'.
+-type motors_command_keys_uint32() :: 'front_m1_accel'    | 'front_m1_distance'
+																		| 'front_m2_accel'    | 'front_m2_distance'
+																		| 'rear_m1_accel'     | 'rear_m1_distance'
+																		| 'rear_m2_accel'     | 'rear_m2_distance'.
+-type motors_command_keys_bool()   :: 'front_m1_buffered' | 'front_m2_buffered'
+																		| 'rear_m1_buffered'  | 'rear_m2_buffered'.
 -spec motors_command([ {motors_command_keys_int32(),  int32()}
 										 | {motors_command_keys_uint32(), uint32()}
 										 | {motors_command_keys_bool(),   boolean()} ])
@@ -156,18 +156,59 @@ motors_command(Os) ->
 	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
 	send_to_amber(Hdr, MsgBinary).
 
-%% @doc Uproszczone sterowanie robotem.
-%% @equiv motors_command([{front_right_speed, Right}, {rear_right_speed, Right}, {front_left_speed, Left}, {rear_left_speed, Left} ]).
+
+%% @doc Uproszczone sterowanie robotem. Pozwala dobrać prędkość dla lewych i
+%% prawych kół.
+%% @equiv motors_command(Left, Right, Left, Right)
 motors_command(Left, Right) ->
-  motors_command([
-                 	 {front_right_speed, Right},
-                 	 {front_left_speed,  Left},
-                 	 {rear_right_speed,  Right},
-                 	 {rear_left_speed,   Left}
-                 ]).
+	motors_command(Left, Right, Left, Right).
+
+
+%% -----------------------------------------------------------------------------
+%% @doc Sterowanie robotem.
+%%
+%% Funkcja nieblokująca. Wysyła żądanie poruszania się kół robota.
+%%
+%% Jednostką prędkości jest mm/s.
+%%
+%% Teoretycznie 12000 pulsów/s to maksimum możliwości enkodera i silników.
+%% Empirycznie stwierdzona prędkość maksymalna to około 2200 mm/s.
+%%
+%% Funkcja może zwrócić błąd jedynie w wypadku błędu protobuf, np. gdy podamy
+%% string zamiast bool.
+%% @end
+%% -----------------------------------------------------------------------------
+-spec motors_command(#motor_cmd{},#motor_cmd{},#motor_cmd{},#motor_cmd{})
+			-> 'ok'.
+motors_command(FL, FR, RL, RR) ->
+	Front = build_drivermsg(FL, FR, 16#81),
+	Rear  = build_drivermsg(RL, RR, 16#80),
+	MsgBase = #drivermsg{type = 'DATA', synnum = get_synnum()},
+	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Rear, Front]),
+	MsgBinary = roboclaw_pb:encode_drivermsg(Msg),
+	{DevT,DevI} = ?ROBOCLAW_TI,
+	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
+	send_to_amber(Hdr, MsgBinary).
+
+
+build_drivermsg(#motor_cmd{speed=L_Speed, accel=L_Accel, dist=L_Dist, is_buf=L_Buf},
+                #motor_cmd{speed=R_Speed, accel=R_Accel, dist=R_Dist, is_buf=R_Buf},
+                HwAddr) ->
+	#motorscommand{
+		address    = HwAddr,
+		m1speed    = R_Speed,
+		m1accel    = R_Accel,
+		m1distance = R_Dist,
+		m1buffered = R_Buf,
+		m2speed    = L_Speed,
+		m2accel    = L_Accel,
+		m2distance = L_Dist,
+		m2buffered = L_Buf
+	}.
+
 
 motors_demo1() ->
-	timer:start(), %% todo: dependency!
+	timer:start(),
 	timer:apply_after(1000, ?MODULE, motors_command, [1000, 1000]),
 	timer:apply_after(2000, ?MODULE, motors_command, [1000, -1000]),
 	timer:apply_after(3000, ?MODULE, motors_command, [1000, 1000]),
@@ -175,6 +216,14 @@ motors_demo1() ->
 	timer:apply_after(5000, ?MODULE, motors_command, [1000, 1000]),
 	timer:apply_after(6000, ?MODULE, motors_command, [0000, 0000]),
 	timer:sleep(7000). 
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ STARGAZER ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
