@@ -6,8 +6,7 @@
   {applications, [
                   kernel,
                   stdlib,
-                  mnesia,
-                  amber
+                  mnesia
                  ]},
   {mod, { amber_client_app, []}},
   {env, []}
