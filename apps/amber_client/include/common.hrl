@@ -8,4 +8,10 @@
 
 -record(amber_client_msg, {hdr = #driverhdr{} :: #driverhdr{},
                            msg = #drivermsg{} :: #drivermsg{}}).
+
+-record(dispd_key, {dev_t  :: non_neg_integer(),
+                    dev_i  :: non_neg_integer(),
+                    synnum :: non_neg_integer()}).
+-record(dispd_val, {recpid = self() :: pid(),
+                    post            :: {fun((any()) -> any()), any()}}).
 -endif.
