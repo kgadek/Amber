@@ -15,16 +15,21 @@
 % gen_server
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
+% api
+-export([register_receiver/2, get_synnum/0, send_to_amber/2]).
+
 % ROBOCLAW
 -define(ROBOCLAW_TI, {2,0}).
 -export([motors_command/1, motors_command/2, motors_command/4, motors_demo1/0]).
 % STARGAZER
 -define(STARGAZER_TI, {3,0}).
--export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2,
-         stargazer_subscribe_position/1]).
+-export([stargazer_order_position/0, stargazer_order_position/1,
+         stargazer_get_position/1, stargazer_get_position/2,
+         stargazer_subscribe_position/0, stargazer_subscribe_position/1]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
-
+-record(dispd_key, {dev_t :: non_neg_integer(), dev_i :: non_neg_integer(), synnum :: non_neg_integer()}).
+-record(dispd_val, {recpid = self()}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, {?AMBERIP, ?AMBERPORT}, []).
 
@@ -37,35 +42,20 @@ init({AmberIP, AmberPort}) ->
 
 terminate(_Reason, #state{socket = Socket}) -> gen_udp:close(Socket).
 
-handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict=Dict} = State) ->
-	{Hdr, MsgB} = router:unpack_msg(Msg),
+handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, FullMsg}, #state{socket=Socket, dict=Dict} = State) ->
+	{Hdr, MsgB} = router:unpack_msg(FullMsg),
 	#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr,
-	#drivermsg{acknum=AckNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
-	NDict = case gb_trees:lookup({DevT, DevI, AckNum}, Dict) of
-						{value, RecPid} ->
-							case process_info(RecPid) of
-								undefined ->
-									gb_trees:delete_any({DevT, DevI, AckNum}, Dict);
-								_ ->
-									RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
-									Dict
-							end;
-						none ->
-							case gb_trees:lookup({DevT, DevI}, Dict) of
-								{value, RecPid} ->
-									case process_info(RecPid) of
-										undefined ->
-											error_logger:error_msg(	"amber_client otrzymal pakiet udp ktorego nie rozumie.~n"
-																							"Nadawca: ~p :~p~nWiadomosc: ~p~nStan: ~p~n",
-																							[?AMBERIP, ?AMBERPORT, Msg, State]),
-											gb_trees:delete_any({DevT, DevI}, Dict);
-										_ ->
-											RecPid ! {amber_client_msg, now(), DevT, DevI, AckNum, MsgB},
-											Dict
-									end
-							end
-				 	end,
-	{noreply, State#state{dict=NDict}}.
+	Msg = drivermsg_pb:decode_drivermsg(MsgB),
+	Key = #dispd_key{dev_t=DevT,dev_i=DevI,synnum=Msg#drivermsg.acknum},
+	{value, #dispd_val{recpid=RecPid}} = gb_trees:lookup(Key, Dict),
+	case process_info(RecPid) of
+		undefined ->
+			NDict = gb_trees:delete_any(Key, Dict),
+			{noreply, State#state{dict=NDict}};
+		_ ->
+			RecPid ! {amber_client_msg, Hdr, Msg},
+			{noreply, State}
+	end.
 
 handle_cast({send_to_amber, MsgB}, #state{aip=AIP, aport=APort, socket=Socket} = State) ->
 	ok = gen_udp:send(Socket, AIP, APort, MsgB),
@@ -81,6 +71,25 @@ handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
 code_change(_OldV, State, _Extra) -> {ok, State}.
 
 
+%% API -------------------------------------------------------------------------
+
+-spec register_receiver(#dispd_key{}, pid())
+			-> 'ok'.
+register_receiver(Key = #dispd_key{}, Pid) -> gen_server:call(?MODULE, {register_receiver, Key, Pid}).
+
+% deregister_receiver({_DevT, _DevI, _SynNum}) -> 'ok'.
+
+-spec get_synnum()
+			-> non_neg_integer().
+get_synnum() -> gen_server:call(?MODULE, get_synnum).
+
+-spec send_to_amber(#driverhdr{}, binary())
+			-> 'ok'.
+send_to_amber(MsgH, MsgBinary) -> send_to_amber(router:pack_msg(MsgH, MsgBinary)).
+
+send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
+
+
 
 
 
@@ -88,14 +97,6 @@ code_change(_OldV, State, _Extra) -> {ok, State}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ ROBOCLAW ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-register_receiver(Key, Pid) -> gen_server:call(?MODULE, {register_receiver, Key, Pid}).
-
-send_to_amber(MsgH, MsgBinary) -> send_to_amber(router:pack_msg(MsgH, MsgBinary)).
-send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
-
-get_synnum() -> gen_server:call(?MODULE, get_synnum).
 
 
 %% -----------------------------------------------------------------------------
@@ -248,6 +249,7 @@ stargazer_order_position(Os) ->
 	send_to_amber(Hdr, MsgBinary),
 	SynNum.
 
+stargazer_subscribe_position() -> stargazer_subscribe_position([]).
 stargazer_subscribe_position(Os) ->
 	% SynNum = get_synnum(),
 	SynNum = 0, % tak, to będzie zmienione
@@ -268,18 +270,17 @@ stargazer_subscribe_position(Os) ->
 stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 
 -spec stargazer_get_position(stargazer_order_position_future_ref(), timeout())
-			-> #localizationdata{}.
+			-> #localization{}.
 stargazer_get_position(SynNum, Timeout) ->
-	{DevT, DevI} = ?STARGAZER_TI,
-	receive {amber_client_msg, RecTime, DevT, DevI, SynNum, MsgB} ->
-		Msg = stargazer_pb:decode_drivermsg(MsgB),
-		{ok, #localizationdata{xpos=X, ypos=Y, zpos=Z,
-													 angle=A, markerid=M}}   = stargazer_pb:get_extension(Msg, localizationdata),
-		{RecTime, #localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M}}
-	after Timeout ->
-		error(stargazer_get_position_timeout)
+	{DevT,DevI} = ?STARGAZER_TI,
+	receive #amber_client_msg{hdr = #driverhdr{devicetype=DevT, deviceid=DevI}, msg=#drivermsg{synnum = SynNum} = Msg} ->
+		DMsg = stargazer_pb:decode_extensions(Msg),
+		{ok, #localizationdata{xpos=X,ypos=Y,zpos=Z,angle=A,markerid=M,timestamp=_T}}
+			= stargazer_pb:get_extension(DMsg, localizationdata),
+		#localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M}
+	after Timeout -> error(stargazer_get_position_timeout)
 	end.
 
-
-
-
+%% TODO
+% -spec stargazer_drivermsg_to_location(#drivermsg{})
+% 			-> #location{}.

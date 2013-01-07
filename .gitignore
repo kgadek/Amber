@@ -6,3 +6,5 @@ apps/*/.eunit
 *.dump
 *.beam
 *.log
+*.trace
+*.txt
