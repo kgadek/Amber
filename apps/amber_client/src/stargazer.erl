@@ -10,10 +10,15 @@
          stargazer_subscribe_position/1, stargazer_subscribe_position/2]).
 
 
-
+%% @equiv stargazer_order_position(self())
 stargazer_order_position() -> stargazer_order_position(self()).
 
 
+%% @doc Zgłasza żądanie pobrania położenia. Odpowiedź będzie wysłana do procesu
+%% podanego poprzez parametr pid w wiadomości typu #amber_client_msg{}.
+%% 
+%% Zaleca się wykorzystanie funkcji {@link stargazer_get_position/1} do
+%% odbierania tych wiadomości.
 -type stargazer_order_position_future_ref() :: non_neg_integer().
 -spec stargazer_order_position(pid())
       -> stargazer_order_position_future_ref().
@@ -32,9 +37,18 @@ stargazer_order_position(Pid) ->
   SynNum.
 
 
+
+%% @equiv stargazer_subscribe_position(Freq, self())
 stargazer_subscribe_position(Freq) -> stargazer_subscribe_position(Freq, self()).
 
 
+%% @doc Wywołanie asynchroniczne. Zwracana wartość -- SynNum -- jest numerem
+%% żądania cyklicznego.
+%% 
+%% W odpowiedzi na żądanie cykliczne dany proces będzie otrzymywać wiadomości
+%% typu `#amber_client_msg{}' co 100ms.
+%% 
+%% Parametry są takie same jak dla funkcji {@link stargazer_order_position/1}.
 stargazer_subscribe_position(Freq, Pid) ->
   SynNum = 0, % tego wymaga sterownik stargazera
   MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
@@ -52,9 +66,21 @@ stargazer_subscribe_position(Freq, Pid) ->
   SynNum.
 
 
+
+%% @equiv stargazer_get_position(SynNum, 5000)
 stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 
 
+%% @doc Zwraca położenie. SynNum jest numerem żądania zwrócanym przez funkcje
+%% {@link stargazer_order_position/0}. Timeout wyznacza maksymalny czas
+%% oczekiwania -- w wypadku jego przekroczenia wywoływana jest funkcja
+%% `erlang:error(stargazer_get_position_timeout)'.
+%% 
+%% Odpowiedź na żądanie jest wysyłana do danego procesu jako wiadomość typu
+%% `#amber_client_msg{}'. Klient może chcieć samemu je odbierać. W takim wypadku
+%% należy użyć funkcji
+%% `stargazer_drivermsg_to_location(ACM#amber_client_msg.msg)' na odebranej
+%% wiadomości ACM.
 -spec stargazer_get_position(stargazer_order_position_future_ref(), timeout())
       -> #localization{}.
 stargazer_get_position(SynNum, Timeout) ->
@@ -67,6 +93,7 @@ stargazer_get_position(SynNum, Timeout) ->
   end.
 
 
+%% @doc Wyciąga dane lokalizacyjne z wiadomości.
 -spec stargazer_drivermsg_to_location(#drivermsg{})
       -> #localization{}.
 stargazer_drivermsg_to_location(Msg) ->

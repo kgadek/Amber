@@ -10,7 +10,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 % api
--export([register_receiver/2, deregister_receiver/1, get_synnum/0, send_to_amber/2, env/1]).
+-export([register_receiver/2, deregister_receiver/1, get_synnum/0, send_to_amber/2]).
+-export([env/1]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
 
@@ -66,13 +67,11 @@ handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
 
 code_change(_OldV, State, _Extra) -> {ok, State}.
 
-send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
 
-env(Par) ->
-	case application:get_env(?MODULE, Par) of
-		{ok, Val} -> Val;
-		undefined -> undefined
-	end.
+
+-spec send_to_amber(binary)
+			-> 'ok'.
+send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
 
 
 
@@ -81,21 +80,61 @@ env(Par) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+%% @doc Funkcja upraszczająca pobieranie konfiguracji. Zwraca błąd w wypadku
+%% braku zadanego parametru.
+-spec env(atom())
+			-> any().
+env(Par) ->
+	{ok, Val} = application:get_env(?MODULE, Par),
+	Val.
+
+
+%% @doc Rejestruje synchronicznie odbiorcę wiadomości o polu acknum równym
+%% podanemu SynNum od urządzenia o podanym typie DevT i numerze DevI.
 -spec register_receiver(#dispd_key{}, #dispd_val{})
 			-> 'ok'.
 register_receiver(Key = #dispd_key{}, Val) ->
 	gen_server:call(?MODULE, {register_receiver, Key, Val}).
 
+
+%% @doc Derejestruje synchronicznie odbiorcę. Działa przeciwnie do funkcji
+%% register_receiver/2.
 -spec deregister_receiver(#dispd_key{})
 			-> 'ok'.
 deregister_receiver(Key = #dispd_key{}) ->
 	gen_server:call(?MODULE, {deregister_receiver, Key}).
 
+
+%% @doc Zwraca (unikalny) numer żądania.
 -spec get_synnum()
 			-> non_neg_integer().
 get_synnum() -> gen_server:call(?MODULE, get_synnum).
 
+
+%% @doc Wysyła asynchronicznie wiadomość do określonego urządzenia. By wiadomość
+%% mogła dotrzeć, potrzebne są odpowiednio ustawione pola devicetype i deviceid
+%% parametru Hdr. By sterownik mógł odpowiedzieć, potrzebne jest zainicjowane
+%% pole synnum parametru Msg.
 -spec send_to_amber(#driverhdr{}, binary())
 			-> 'ok'.
 send_to_amber(MsgH, MsgBinary) -> send_to_amber(router:pack_msg(MsgH, MsgBinary)).
 
+
+%% @doc Zdejmuje z kolejki wiadomości wszystkie typu #amber_client_msg{} i
+%% zwraca najnowszą. Gdy w kolejce nie ma żadnej, czeka na dostarczenie takiej
+%% wiadomości przez określony czas.
+-spec get_newest_amber_client_msg(timeout())
+	-> #amber_client_msg{}.
+get_newest_amber_client_msg(Timeout) ->
+	receive Msg = #amber_client_msg{} -> get_newest_amber_client_msg(Msg, Timeout)
+	after 0 ->
+		receive Msg = #amber_client_msg{} -> Msg
+		after Timeout -> error(amber_client_get_newest_msg_timeout)
+		end
+	end.
+
+%% @hidden
+get_newest_amber_client_msg(Msg, Timeout) ->
+	receive NMsg = #amber_client_msg{} -> get_newest_amber_client_msg(NMsg, Timeout)
+	after 0 -> Msg
+	end.
