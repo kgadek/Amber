@@ -9,5 +9,10 @@
                   mnesia
                  ]},
   {mod, { amber_client_app, []}},
-  {env, []}
+  {env, [
+         {stargazer_devt, 3}
+         , {stargazer_devi, 0}
+         , {roboclaw_devt, 2}
+         , {roboclaw_devi, 0}
+        ]}
  ]}.

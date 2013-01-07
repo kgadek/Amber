@@ -19,20 +19,18 @@
 -export([register_receiver/2, deregister_receiver/1, get_synnum/0, send_to_amber/2]).
 
 % ROBOCLAW
--define(ROBOCLAW_TI, {2,0}).
 -export([motors_command/2, motors_command/4, motors_demo1/0]).
 % STARGAZER
--define(STARGAZER_TI, {3,0}).
 -export([stargazer_order_position/0, stargazer_order_position/1,
          stargazer_get_position/1, stargazer_get_position/2,
-         stargazer_subscribe_position/0, stargazer_subscribe_position/1]).
+         stargazer_subscribe_position/1, stargazer_subscribe_position/2]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
 -record(dispd_key, {dev_t  :: non_neg_integer(),
         						dev_i  :: non_neg_integer(),
         						synnum :: non_neg_integer()}).
 -record(dispd_val, {recpid = self() :: pid(),
-        						post            :: mfa() | fun(() -> any())}).
+        						post            :: {fun((any()) -> any()), any()}}).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, {?AMBERIP, ?AMBERPORT}, []).
 
@@ -56,12 +54,10 @@ handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, FullMsg}, #state{socket=Socket, 
 					NDict = gb_trees:delete_any(Key, Dict),
 					{noreply, State#state{dict=NDict}};
 				_ ->
-					RecPid ! {amber_client_msg, Hdr, Msg},
+					RecPid ! #amber_client_msg{hdr=Hdr, msg=Msg},
 					case Post of
-						F when is_function(F,0) -> F();
-						{F,A}                   -> apply(F,A);
-						{M,F,A}                 -> apply(M,F,A);
-						_ -> ok
+						{F,A} -> F(A);
+						undefined -> ok
 					end,
 					{noreply, State}
 			end;
@@ -73,11 +69,11 @@ handle_cast({send_to_amber, MsgB}, #state{aip=AIP, aport=APort, socket=Socket} =
 	{noreply, State}.
 
 handle_call({register_receiver, Key, Value}, _From, #state{dict=Dict} = State) ->
-	NDict = gb_trees:enter(Key, Value, Dict), 
+	NDict = gb_trees:enter(Key, Value, Dict),
 	{reply, ok, State#state{dict=NDict}};
 
 handle_call({deregister_receiver, Key}, _From, #state{dict=Dict} = State) ->
-	NDict = gb_trees:delete_any(Key, Dict), 
+	NDict = gb_trees:delete_any(Key, Dict),
 	{reply, ok, State#state{dict=NDict}};
 
 handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
@@ -85,13 +81,17 @@ handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
 
 code_change(_OldV, State, _Extra) -> {ok, State}.
 
-noop() -> ok.
 send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
+
+env(Par) -> application:get_env(?MODULE, Par).
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ API ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 -spec register_receiver(#dispd_key{}, #dispd_val{})
 			-> 'ok'.
@@ -114,10 +114,10 @@ send_to_amber(MsgH, MsgBinary) -> send_to_amber(router:pack_msg(MsgH, MsgBinary)
 
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ ROBOCLAW ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 
 %% @doc Uproszczone sterowanie robotem. Pozwala dobrać prędkość dla lewych i
@@ -149,8 +149,7 @@ motors_command(FL, FR, RL, RR) ->
 	MsgBase = #drivermsg{type = 'DATA', synnum = get_synnum()},
 	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Rear, Front]),
 	MsgBinary = roboclaw_pb:encode_drivermsg(Msg),
-	{DevT,DevI} = ?ROBOCLAW_TI,
-	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
+	Hdr = #driverhdr{devicetype = env(roboclaw_devt), deviceid = env(roboclaw_devi)},
 	send_to_amber(Hdr, MsgBinary).
 
 
@@ -185,44 +184,39 @@ motors_demo1() ->
 
 
 
-stargazer_order_position() -> stargazer_order_position([]).
+stargazer_order_position() -> stargazer_order_position(self()).
 
 -type stargazer_order_position_future_ref() :: non_neg_integer().
--spec stargazer_order_position([ {'device_type', uint32()}
-															 | {'device_id',   uint32()}
-															 | {'pid',         pid()}])
+-spec stargazer_order_position(pid())
 			-> stargazer_order_position_future_ref().
-stargazer_order_position(Os) ->
+stargazer_order_position(Pid) ->
 	SynNum = get_synnum(),
 	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
 	{ok, Msg} = stargazer_pb:set_extension(MsgBase, datarequest, #datarequest{}),
 	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
-	{DefDevT,DefDevI} = ?STARGAZER_TI,
-	DevT = proplists:get_value(device_type, Os, DefDevT),
-	DevI = proplists:get_value(device_id, Os, DefDevI), 
+	DevT = env(stargazer_devt),
+	DevI = env(stargazer_devi),
 	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
 	Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=SynNum},
-	Val = #dispd_val{recpid = proplists:get_value(pid, Os, self()),
-									 post = {fun deregister_receiver/1, Key}},
+	Val = #dispd_val{recpid = Pid, post = {fun deregister_receiver/1, Key}},
 	register_receiver(Key, Val),
 	send_to_amber(Hdr, MsgBinary),
 	SynNum.
 
-stargazer_subscribe_position() -> stargazer_subscribe_position([]).
+stargazer_subscribe_position(Freq) -> stargazer_subscribe_position(Freq, self()).
 
-stargazer_subscribe_position(Os) ->
+stargazer_subscribe_position(Freq, Pid) ->
 	SynNum = 0, % tego wymaga sterownik stargazera
  	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
 	{ok, Msg} = stargazer_pb:set_extension(MsgBase, subscribeaction,
 	                                       #subscribeaction{action = 'SUBSCRIBE',
-	                                       									freq   = proplists:get_value(freq, Os, 100) }),
-	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
-	{DefDevT,DefDevI} = ?STARGAZER_TI,
-	DevT = proplists:get_value(device_type, Os, DefDevT),
-	DevI = proplists:get_value(device_id, Os, DefDevI), 
+	                                       									freq   = Freq }),
+	DevT = env(stargazer_devt),
+	DevI = env(stargazer_devi),
 	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
+	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
 	Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=SynNum},
-	Val = #dispd_val{recpid = proplists:get_value(pid, Os, self())},
+	Val = #dispd_val{recpid = Pid},
 	register_receiver(Key, Val),
 	send_to_amber(Hdr, MsgBinary),
 	SynNum.
@@ -232,7 +226,8 @@ stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
 -spec stargazer_get_position(stargazer_order_position_future_ref(), timeout())
 			-> #localization{}.
 stargazer_get_position(SynNum, Timeout) ->
-	{DevT,DevI} = ?STARGAZER_TI,
+	DevT = env(stargazer_devt),
+	DevI = env(stargazer_devi),
 	receive #amber_client_msg{hdr = #driverhdr{devicetype=DevT, deviceid=DevI},
 														msg = #drivermsg{synnum=SynNum} = Msg} ->
 		stargazer_drivermsg_to_location(Msg)
