@@ -7,8 +7,8 @@ branches:
   only:
     - master
     - develop
-    - /^hotfix-.*$/
-    - /^release-.*$/
+    - /^hotfix-.*/
+    - /^release-.*/
 notifications:
   email:
     recipients:
