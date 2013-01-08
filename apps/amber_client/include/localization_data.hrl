@@ -5,10 +5,11 @@
 
 %% Teraz to de facto kopia localizationdata, ale umożliwiamy sobie zmianę
 %% szczegółów protokołu kiedyś.
--record(localization, {xpos     :: float(),
-                       ypos     :: float(),
-                       zpos     :: float(),
-                       angle    :: float(),
-                       markerid :: uint32()}).
+-record(localization, {xpos      :: float(),
+                       ypos      :: float(),
+                       zpos      :: float(),
+                       angle     :: float(),
+                       timestamp :: uint32(),
+                       markerid  :: uint32()}).
 
 -endif.
