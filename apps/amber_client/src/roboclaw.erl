@@ -17,7 +17,10 @@
 %% prawych kół.
 %% @equiv motors_command(Left, Right, Left, Right)
 motors_command(Left, Right) ->
-  motors_command(Left, Right, Left, Right).
+  motors_command(#motor_cmd{speed=Left},
+                 #motor_cmd{speed=Right},
+                 #motor_cmd{speed=Left},
+                 #motor_cmd{speed=Right}).
 
 
 %% -----------------------------------------------------------------------------

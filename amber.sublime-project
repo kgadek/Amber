@@ -3,7 +3,7 @@
 	[
 		{
 			"path": ".",
-			"folder_exclude_patterns": ["deps", "rel/amber", "apps/*/.eunit", "apps/*/ebin", "apps/*/bin"]
+			"folder_exclude_patterns": ["deps", "rel/amber", "apps/*/.eunit", "apps/*/ebin", "apps/*/bin", "apps/*/doc"]
 		}
 	],
 	"settings":
