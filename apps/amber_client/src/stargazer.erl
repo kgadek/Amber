@@ -9,6 +9,21 @@
          stargazer_get_position/1, stargazer_get_position/2,
          stargazer_subscribe_position/1, stargazer_subscribe_position/2,
          stargazer_drivermsg_to_location/1]).
+-export([order_position/0, order_position/1,
+         get_position/1, get_position/2,
+         subscribe_position/1, subscribe_position/2,
+         drivermsg_to_location/1]).
+
+
+%% Krótsze nazwy funkcji.
+
+order_position()         -> order_position().
+order_position(A)        -> stargazer_order_position(A).
+get_position(A)          -> stargazer_get_position(A).
+get_position(A,B)        -> stargazer_get_position(A,B).
+subscribe_position(A)    -> stargazer_subscribe_position(A).
+subscribe_position(A,B)  -> stargazer_subscribe_position(A,B).
+drivermsg_to_location(A) -> stargazer_drivermsg_to_location(A).
 
 
 %% @equiv stargazer_order_position(self())

@@ -5,12 +5,15 @@
 -include("include/motors_control.hrl").
 
 -export([motors_command/2, motors_command/4, motors_demo1/0]).
+-export([command/2, command/4]).
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ ROBOCLAW ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Krótsze nazwy funkcji.
+
+command(A,B)     -> motors_command(A,B).
+command(A,B,C,D) -> motors_command(A,B,C,D).
+
 
 
 %% @doc Uproszczone sterowanie robotem. Pozwala dobrać prędkość dla lewych i
