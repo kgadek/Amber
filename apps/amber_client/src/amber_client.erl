@@ -43,10 +43,10 @@ handle_info({udp, Socket, _IP, Port, FullMsg}, #state{socket=Socket, dict=Dict} 
 					{noreply, State#state{dict=NDict}};
 				_ ->
 					RecPid ! #amber_client_msg{hdr=Hdr, msg=Msg},
-					case Post of
-						{F,A} -> F(A);
-						undefined -> ok
-					end,
+					% case Post of %% TODO!!
+					% 	{F,A} -> F(A);
+					% 	undefined -> ok
+					% end,
 					{noreply, State}
 			end;
 		_ -> {noreply, State}
