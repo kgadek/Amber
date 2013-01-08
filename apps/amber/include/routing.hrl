@@ -3,8 +3,6 @@
 
 -include("include/drivermsg_pb.hrl").
 
--define(QUERY(Q), qlc:eval(qlc:q(Q))).
-
 %% MNESIA:
 -record(routing_node, {
 	id     :: non_neg_integer(), % identyfikacja węzła; nie jest znana węzłowi
