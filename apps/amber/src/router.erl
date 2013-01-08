@@ -7,7 +7,7 @@
 
 -export([send_msg/2, pack_msg/2, unpack_msg/1]).
 
--include_lib("stdlib/include/qlc.hrl").
+-include_lib("stdlib/include/ms_transform.hrl").
 -include("include/drivermsg_pb.hrl").
 -include("include/routing.hrl").
 -record(state, {mid, conf}).
@@ -90,13 +90,12 @@ handle_call(_, _, State) ->
 handle_cast({send_msg, Sender, #driverhdr{devicetype=DevT, deviceid=DevI}, Msg}, State)
 																																				when is_integer(DevT), is_integer(DevI) ->
 	% od klienta do drivera %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	Q1 = fun() -> %% sender_ModID → sender_GID
-		?QUERY([Q_GID ||	#routing_node{id=Q_GID, mod_id=Q_ModID} <- mnesia:table(routing_node),
-											Q_ModID == Sender])
+	Q1 = fun() -> mnesia:select(routing_node,
+		ets:fun2ms(fun(#routing_node{id=Id, mod_id=MID})      when MID =:= Sender       -> Id end))
 	end,
-	Q2 = fun() -> %% receiver_DevTI → receiver_ModID
-		?QUERY([Q_ModID ||	#routing_node{mod_id=Q_ModID, dev_ti=Q_DevTI} <- mnesia:table(routing_node),
-												Q_DevTI == {DevT, DevI}])
+	%% receiver_DevTI → receiver_ModID
+	Q2 = fun() -> mnesia:select(routing_node,
+		ets:fun2ms(fun(#routing_node{mod_id=MID, dev_ti=DTI}) when DTI =:= {DevT, DevI} -> MID end))
 	end,
 	SenderGID = case mnesia:transaction(Q1) of
 		{atomic, [C_SenderGID]} ->
@@ -109,7 +108,7 @@ handle_cast({send_msg, Sender, #driverhdr{devicetype=DevT, deviceid=DevI}, Msg},
 			Q2c = fun() ->
 				NewId = mnesia:foldl(Q2b, 0, routing_node) + 1,
 				NewNode = #routing_node{id=NewId, mod_id=Sender, dev_ti=NRef, conf=[]},
-				mnesia:write(NewNode),
+				mnesia:dirty_write(NewNode),
 				NewId
 			end,
 			{atomic, N_SenderGID} = mnesia:transaction(Q2c),
@@ -124,13 +123,13 @@ handle_cast({send_msg, _Sender, #driverhdr{clientids=[]}, _Msg}, State) ->
 	{noreply, State};
 handle_cast({send_msg, Sender, #driverhdr{clientids=[C|Cs]} = Hdr, Msg}, State) ->
 	% od drivera do klienta %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	Q1 = fun() -> %% sender_ModID → sender_DevTI
-		?QUERY([Q_DevTI ||	#routing_node{dev_ti=Q_DevTI, mod_id=Q_ModID} <- mnesia:table(routing_node),
-												Q_ModID == Sender])
+	%% sender_ModID → sender_DevTI
+	Q1 = fun() -> mnesia:select(routing_node,
+		ets:fun2ms(fun(#routing_node{dev_ti=DTI, mod_id=MID}) when MID =:= Sender -> DTI end))
 	end,
-	Q2 = fun() -> %% receiver_GID → receiver_ModID
-		?QUERY([RecMMID ||	#routing_node{mod_id=RecMMID, id=Q_GID} <- mnesia:table(routing_node),
-																Q_GID == C])
+	%% receiver_GID → receiver_ModID
+	Q2 = fun() -> mnesia:select(routing_node,
+		ets:fun2ms(fun(#routing_node{mod_id=MID, id=ID}) when ID =:= C -> MID end))
 	end,
 	{atomic, [{DevT,DevI}]}      = mnesia:transaction(Q1),
 	{atomic, [{RecMod, RecMID}]} = mnesia:transaction(Q2),
