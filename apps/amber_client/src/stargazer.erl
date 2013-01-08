@@ -7,7 +7,8 @@
 
 -export([stargazer_order_position/0, stargazer_order_position/1,
          stargazer_get_position/1, stargazer_get_position/2,
-         stargazer_subscribe_position/1, stargazer_subscribe_position/2]).
+         stargazer_subscribe_position/1, stargazer_subscribe_position/2,
+         stargazer_drivermsg_to_location/1]).
 
 
 %% @equiv stargazer_order_position(self())
