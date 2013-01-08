@@ -1,7 +1,11 @@
 deps
 apps/*/ebin
+apps/*/doc
 apps/*/priv
 apps/*/.eunit
 *.sublime-workspace
 *.dump
 *.beam
+*.log
+*.trace
+*.txt

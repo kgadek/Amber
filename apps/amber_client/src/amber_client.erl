@@ -2,80 +2,65 @@
 -behaviour(gen_server).
 
 -include("include/drivermsg_pb.hrl").
--include("include/roboclaw_pb.hrl").
--include("include/stargazer_pb.hrl").
+-include("include/common.hrl").
 
--define(AMBERIP, {127,0,0,1}).
--define(AMBERPORT, 26233).
--define(CLIENTPORT, 26232).
 
+% gen_server
 -export([start/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
-
--define(ROBOCLAW_TI, {2,0}).
--export([motors_command/1, motors_command/2, motors_demo1/0]).
-
--define(STARGAZER_TI, {0,0}).
--export([stargazer_order_position/0, stargazer_order_position/1, stargazer_get_position/1, stargazer_get_position/2]).
+% api
+-export([register_receiver/2, deregister_receiver/1, get_synnum/0, send_to_amber/2]).
+-export([env/1]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
 
--type int32()  :: -2147483648..2147483647.
--type uint32() :: 0..4294967295.
 
+start() ->
+	application:start(?MODULE).
 
-start() -> application:start(?MODULE).
-start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, {?AMBERIP, ?AMBERPORT}, []).
+start_link() ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-
-init({AmberIP, AmberPort}) ->
-	{ok, Socket} = gen_udp:open(?CLIENTPORT, [binary]),
-	{ok, #state{aip    = AmberIP,  aport = AmberPort,
-							socket = Socket,   dict  = gb_trees:empty(),
+init([]) ->
+	{ok, Socket} = gen_udp:open(env(amber_client_port), [binary]),
+	{ok, #state{aip    = env(amber_ip), aport = env(amber_port),
+							socket = Socket,        dict  = gb_trees:empty(),
 							%% TODO: synnymnext wywalić do mnesii, niedobrze jak jest w 'volatile'
 							synnumnext = 1}}.
 
 terminate(_Reason, #state{socket = Socket}) -> gen_udp:close(Socket).
 
-handle_info({udp, Socket, ?AMBERIP, ?AMBERPORT, Msg}, #state{socket=Socket, dict=Dict} = State) ->
-	{Hdr, MsgB} = router:unpack_msg(Msg),
-	#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr,
-	#drivermsg{synnum=SynNum}                  = drivermsg_pb:decode_drivermsg(MsgB),
-
-	NDict = case gb_trees:lookup({DevT, DevI, SynNum}, Dict) of
-						{value, RecPid} ->
-							case process_info(RecPid) of
-								undefined ->
-									gb_trees:delete_any({DevT, DevI, SynNum}, Dict);
-								_ ->
-									RecPid ! {amber_client_msg, now(), DevT, DevI, SynNum, MsgB},
-									Dict
-							end;
-						none ->
-							case gb_trees:lookup({DevT, DevI}, Dict) of
-								{value, RecPid} ->
-									case process_info(RecPid) of
-										undefined ->
-											error_logger:error_msg(	"amber_client otrzymal pakiet udp ktorego nie rozumie.~n"
-																							"Nadawca: ~p :~p~nWiadomosc: ~p~nStan: ~p~n",
-																							[?AMBERIP, ?AMBERPORT, Msg, State]),
-											gb_trees:delete_any({DevT, DevI}, Dict);
-										_ ->
-											RecPid ! {amber_client_msg, now(), DevT, DevI, SynNum, MsgB},
-											Dict
-									end
-							end
-				 	end,
-	{noreply, State#state{dict=NDict}}.
+handle_info({udp, Socket, _IP, Port, FullMsg}, #state{socket=Socket, dict=Dict} = State) ->
+	{#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr, MsgB} = router:unpack_msg(FullMsg),
+	#drivermsg{acknum = AckNum} = Msg                        = drivermsg_pb:decode_drivermsg(MsgB),
+	Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=AckNum},
+	case gb_trees:lookup(Key, Dict) of
+		{value, #dispd_val{recpid=RecPid, post=Post}} ->
+			case process_info(RecPid) of
+				undefined ->
+					NDict = gb_trees:delete_any(Key, Dict),
+					{noreply, State#state{dict=NDict}};
+				_ ->
+					RecPid ! #amber_client_msg{hdr=Hdr, msg=Msg},
+					% case Post of %% TODO!!
+					% 	{F,A} -> F(A);
+					% 	undefined -> ok
+					% end,
+					{noreply, State}
+			end;
+		_ -> {noreply, State}
+	end.
 
 handle_cast({send_to_amber, MsgB}, #state{aip=AIP, aport=APort, socket=Socket} = State) ->
 	ok = gen_udp:send(Socket, AIP, APort, MsgB),
 	{noreply, State}.
 
-handle_call({register_receiver, Key, Pid}, _From, #state{dict=Dict} = State) ->
-	NDict = gb_trees:enter(Key, Pid, Dict), 
-	{reply, ok, State#state{dict=NDict}};
+handle_call({register_receiver, Key, Value}, _From, #state{dict=Dict} = State) ->
+	{reply, ok, State#state{dict = gb_trees:enter(Key, Value, Dict)}};
+
+handle_call({deregister_receiver, Key}, _From, #state{dict=Dict} = State) ->
+	{reply, ok, State#state{dict = gb_trees:delete_any(Key, Dict)}};
 
 handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
 	{reply, SN, State#state{synnumnext=SN+1}}.
@@ -83,120 +68,73 @@ handle_call(get_synnum, _From, #state{synnumnext=SN} = State) ->
 code_change(_OldV, State, _Extra) -> {ok, State}.
 
 
-%% API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-register_receiver(Key, Pid) -> gen_server:call(?MODULE, {register_receiver, Key, Pid}).
-
-send_to_amber(MsgH, MsgBinary) -> send_to_amber(router:pack_msg(MsgH, MsgBinary)).
+-spec send_to_amber(binary)
+			-> 'ok'.
 send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%[ API ]%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% @doc Funkcja upraszczająca pobieranie konfiguracji. Zwraca błąd w wypadku
+%% braku zadanego parametru.
+-spec env(atom())
+			-> any().
+env(Par) ->
+	{ok, Val} = application:get_env(?MODULE, Par),
+	Val.
+
+
+%% @doc Rejestruje synchronicznie odbiorcę wiadomości o polu acknum równym
+%% podanemu SynNum od urządzenia o podanym typie DevT i numerze DevI.
+-spec register_receiver(#dispd_key{}, #dispd_val{})
+			-> 'ok'.
+register_receiver(Key = #dispd_key{}, Val) ->
+	gen_server:call(?MODULE, {register_receiver, Key, Val}).
+
+
+%% @doc Derejestruje synchronicznie odbiorcę. Działa przeciwnie do funkcji
+%% register_receiver/2.
+-spec deregister_receiver(#dispd_key{})
+			-> 'ok'.
+deregister_receiver(Key = #dispd_key{}) ->
+	gen_server:call(?MODULE, {deregister_receiver, Key}).
+
+
+%% @doc Zwraca (unikalny) numer żądania.
+-spec get_synnum()
+			-> non_neg_integer().
 get_synnum() -> gen_server:call(?MODULE, get_synnum).
 
 
-%% -----------------------------------------------------------------------------
-%% @doc Podstawowa procedura do poruszania robotem.
-%%
-%% Funkcja nieblokująca. Wysyła żądanie poruszania się kół robota.
-%% Jednostką prędkości jest mm/s.
-%%
-%% Teoretycznie 12000 pulsów/s to maksimum możliwości enkodera i silników.
-%% Empirycznie stwierdzona prędkość maksymalna to około 2200 mm/s.
-%%
-%% Funkcja może zwrócić błąd jedynie w wypadku błędu protobuf, np. gdy podamy
-%% string zamiast int.
-%% @end
-%% -----------------------------------------------------------------------------
--type motors_command_keys_int32()  :: 'front_m1_speed' | 'front_m2_speed' | 'rear_m1_speed' | 'rear_m2_speed'.
--type motors_command_keys_uint32() :: 'front_m1_accel' | 'front_m1_distance' | 'front_m2_accel' | 'front_m2_distance' |
-															        'rear_m1_accel'  | 'rear_m1_distance'  | 'rear_m2_accel'  | 'rear_m2_distance'.
--type motors_command_keys_bool()   :: 'front_m1_buffered' | 'front_m2_buffered' | 'rear_m1_buffered' | 'rear_m2_buffered'.
--spec motors_command([ {motors_command_keys_int32(),  int32()}
-										 | {motors_command_keys_uint32(), uint32()}
-										 | {motors_command_keys_bool(),   boolean()} ])
+%% @doc Wysyła asynchronicznie wiadomość do określonego urządzenia. By wiadomość
+%% mogła dotrzeć, potrzebne są odpowiednio ustawione pola devicetype i deviceid
+%% parametru Hdr. By sterownik mógł odpowiedzieć, potrzebne jest zainicjowane
+%% pole synnum parametru Msg.
+-spec send_to_amber(#driverhdr{}, binary())
 			-> 'ok'.
-motors_command(Os) ->
-	Rear = #motorscommand{
-		address = 16#80,
-		m1speed    = proplists:get_value(rear_right_speed,    Os),
-  	m1accel    = proplists:get_value(rear_right_accel,    Os),
-  	m1distance = proplists:get_value(rear_right_distance, Os),
-  	m1buffered = proplists:get_value(rear_right_buffered, Os),
-  	m2speed    = proplists:get_value(rear_left_speed,    Os),
-		m2accel    = proplists:get_value(rear_left_accel,    Os),
-		m2distance = proplists:get_value(rear_left_distance, Os),
-		m2buffered = proplists:get_value(rear_left_buffered, Os)
-  },
-  Front = #motorscommand{
-  	address = 16#81,
-		m1speed    = proplists:get_value(front_right_speed,     Os),
-  	m1accel    = proplists:get_value(front_right_accel,     Os),
-  	m1distance = proplists:get_value(front_right_distance,  Os),
-  	m1buffered = proplists:get_value(front_right_buffered,  Os),
-  	m2speed    = proplists:get_value(front_left_speed,     Os),
-		m2accel    = proplists:get_value(front_left_accel,     Os),
-		m2distance = proplists:get_value(front_left_distance,  Os),
-		m2buffered = proplists:get_value(front_left_buffered,  Os)
-  },
-	MsgBase = #drivermsg{type = 'DATA', synnum = get_synnum()},
-	{ok, Msg} = roboclaw_pb:set_extension(MsgBase, motorscommands, [Rear, Front]),
-	MsgBinary = roboclaw_pb:encode_drivermsg(Msg),
-	{DevT,DevI} = ?ROBOCLAW_TI,
-	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
-	send_to_amber(Hdr, MsgBinary).
-
-%% @doc Uproszczone sterowanie robotem.
-%% @equiv motors_command([{front_right_speed, Right}, {rear_right_speed, Right}, {front_left_speed, Left}, {rear_left_speed, Left} ]).
-motors_command(Left, Right) ->
-  motors_command([
-                 	 {front_right_speed, Right},
-                 	 {front_left_speed,  Left},
-                 	 {rear_right_speed,  Right},
-                 	 {rear_left_speed,   Left}
-                 ]).
-
-motors_demo1() ->
-	timer:start(), %% todo: dependency!
-	timer:apply_after(1000, ?MODULE, motors_command, [1000, 1000]),
-	timer:apply_after(2000, ?MODULE, motors_command, [1000, -1000]),
-	timer:apply_after(3000, ?MODULE, motors_command, [1000, 1000]),
-	timer:apply_after(4000, ?MODULE, motors_command, [1000, -1000]),
-	timer:apply_after(5000, ?MODULE, motors_command, [1000, 1000]),
-	timer:apply_after(6000, ?MODULE, motors_command, [0000, 0000]),
-	timer:sleep(7000). 
+send_to_amber(MsgH, MsgBinary) -> send_to_amber(router:pack_msg(MsgH, MsgBinary)).
 
 
+%% @doc Zdejmuje z kolejki wiadomości wszystkie typu #amber_client_msg{} i
+%% zwraca najnowszą. Gdy w kolejce nie ma żadnej, czeka na dostarczenie takiej
+%% wiadomości przez określony czas.
+-spec get_newest_amber_client_msg(timeout())
+	-> #amber_client_msg{}.
+get_newest_amber_client_msg(Timeout) ->
+	receive Msg = #amber_client_msg{} -> get_newest_amber_client_msg(Msg, Timeout)
+	after 0 ->
+		receive Msg = #amber_client_msg{} -> Msg
+		after Timeout -> error(amber_client_get_newest_msg_timeout)
+		end
+	end.
 
-stargazer_order_position() -> stargazer_order_position([]).
-
--type stargazer_order_position_future_ref() :: non_neg_integer().
--spec stargazer_order_position([ {'device_type', uint32()}
-															 | {'device_id',   uint32()}
-															 | {'pid',         pid()}])
-			-> stargazer_order_position_future_ref().
-stargazer_order_position(Os) ->
-	SynNum = get_synnum(),
-	MsgBase = #drivermsg{type = 'DATA', synnum = SynNum},
-	{ok, Msg} = stargazer_pb:set_extension(MsgBase, datarequest, #datarequest{}),
-	MsgBinary = stargazer_pb:encode_drivermsg(Msg),
-	{DefDevT,DefDevI} = ?STARGAZER_TI,
-	DevT = proplists:get_value(device_type, Os, DefDevT),
-	DevI = proplists:get_value(device_id, Os, DefDevI), 
-	Hdr = #driverhdr{devicetype = DevT, deviceid = DevI},
-	OrderedBy = proplists:get_value(pid, Os, self()), 
-	register_receiver({DevT, DevI, SynNum}, OrderedBy),
-	send_to_amber(Hdr, MsgBinary),
-	SynNum.
-
-
-stargazer_get_position(SynNum) -> stargazer_get_position(SynNum, 5000).
-
--spec stargazer_get_position(stargazer_order_position_future_ref(), timeout())
-			-> #drivermsg{}.
-stargazer_get_position(SynNum, Timeout) ->
-	{DevT, DevI} = ?STARGAZER_TI,
-	receive {amber_client_msg, RecTime, DevT, DevI, SynNum, MsgB} ->
-		Msg = stargazer_pb:decode_drivermsg(MsgB),
-		{RecTime, Msg}
-	after Timeout ->
-		error(stargazer_get_position_timeout)
+%% @hidden
+get_newest_amber_client_msg(Msg, Timeout) ->
+	receive NMsg = #amber_client_msg{} -> get_newest_amber_client_msg(NMsg, Timeout)
+	after 0 -> Msg
 	end.

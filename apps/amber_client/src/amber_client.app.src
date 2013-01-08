@@ -1,15 +1,23 @@
 {application, amber_client,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "Aplikacja kliencka"},
+  {vsn, "2"},
   {registered, [amber_client]},
   {applications, [
                   kernel,
                   stdlib,
-                  mnesia,
-                  timer,
-                  amber
+                  mnesia
                  ]},
+  {modules, [amber_client, amber_client_app, amber_client_sup,
+             roboclaw, stargazer]},
   {mod, { amber_client_app, []}},
-  {env, []}
+  {env, [
+         {amber_ip, {127,0,0,1}}
+         , {amber_port, 26233}
+         , {amber_client_port, 26232}
+         , {stargazer_devt, 3}
+         , {stargazer_devi, 0}
+         , {roboclaw_devt, 2}
+         , {roboclaw_devi, 0}
+        ]}
  ]}.
