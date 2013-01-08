@@ -87,7 +87,7 @@ stargazer_get_position(SynNum, Timeout) ->
   DevT = amber_client:env(stargazer_devt),
   DevI = amber_client:env(stargazer_devi),
   receive #amber_client_msg{hdr = #driverhdr{devicetype=DevT, deviceid=DevI},
-                            msg = #drivermsg{synnum=SynNum} = Msg} ->
+                            msg = #drivermsg{acknum=SynNum} = Msg} ->
     stargazer_drivermsg_to_location(Msg)
   after Timeout -> error(stargazer_get_position_timeout)
   end.
