@@ -14,7 +14,7 @@ function compile {
   local LDFLAGS="-lm -lrt -lpthread -llog4cxx -lboost_thread -lprotobuf -lboost_program_options"
 
   "$CXX" -o "${ROOT}/priv/${DRV}_driver" \
-  "${DRV_SRC}"/*.cpp $(ls $DRV_EXTRA_SRC) "${SRC}"/amber_driver/*.cpp "${SRC}/${DRV}"/protobuf/roboclaw.pb.cc "${SRC}"/protobuf/drivermsg.pb.cc \
+  "${DRV_SRC}"/*.cpp $(ls $DRV_EXTRA_SRC) "${SRC}"/amber_driver/*.cpp "${SRC}/${DRV}"/protobuf/*.pb.cc "${SRC}"/protobuf/*.pb.cc \
   -I"${DRV_SRC}" "-I${DRV_EXTRA_INC}" "-I${SRC}"/amber_driver "-I${SRC}/${DRV}"/protobuf "-I${SRC}/protobuf" \
   $CXXFLAGS $LDFLAGS
 }

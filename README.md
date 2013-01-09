@@ -36,10 +36,16 @@ Projekt inżynierski Konrada Gądka i Michała Konarskiego. Składa się z
 Wow. Istnieją.
 
 
-## Kompilacja
+## Pierwsza kompilacja
 
-1. `make` # ściąga zależności, kompiluje projekt
+1. `make all` # ściąga zależności, kompiluje projekt i sterowniki
 1. `make test` # testy
+
+## Następne kompilacje
+
+  - `make` # kompiluje zmiany wprowadzone do mediatora (`amber`) i klienta (`amber_client`)
+  - `make drivers` # kompiluje wszystkie sterowniki
+  - `make roboclaw_drivers` # kompiluje konkretny sterownik
 
 
 ## Git workflow
