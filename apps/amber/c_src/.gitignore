@@ -1,1 +1,3 @@
 *.o
+protobuf/*.pb.*
+*/protobuf/*.pb.*
