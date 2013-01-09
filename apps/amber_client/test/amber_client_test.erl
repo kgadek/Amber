@@ -47,12 +47,12 @@ prop_warmup() ->
 
 
 prop_msg_from_remote_client() ->
-  ?FORALL({Times}, {non_neg_integer()},
-      lists:all(fun(X) -> X=:=true end,
-                lists:map(fun msg_send_receive/1,
-                          lists:seq(1, Times)))).
+  ?FORALL(Xs,
+          list(pos_integer()),
+    lists:all(fun(X) -> X=:=true end,
+              lists:map(fun msg_send_receive/1, Xs))).
 
-msg_send_receive(_) ->
+msg_send_receive(MsgNumber) ->
   {DevT,DevI} = {2,3},
   SynNum = amber_client:get_synnum(),
   Hdr = #driverhdr{devicetype=DevT, deviceid=DevI},
@@ -76,10 +76,10 @@ msg_send_receive(_) ->
           end;
         (_,_) ->
           Self ! {true, Ref}
-    end, [1]
+    end, [MsgNumber]
   },
   amber_client:register_receiver(Key, Val),
-  amber_client:send_to_amber(Hdr, MsgBinary),
+  [amber_client:send_to_amber(Hdr, MsgBinary) || _ <- lists:seq(1,MsgNumber)],
   receive {Bool, Ref} -> Bool
   after   500         -> false
   end.
