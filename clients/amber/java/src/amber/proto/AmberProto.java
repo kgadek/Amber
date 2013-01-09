@@ -608,6 +608,10 @@ public final class AmberProto {
     // optional uint32 ackNum = 4;
     boolean hasAckNum();
     int getAckNum();
+    
+    // optional uint32 listenerNum = 5;
+    boolean hasListenerNum();
+    int getListenerNum();
   }
   public static final class DriverMsg extends
       com.google.protobuf.GeneratedMessage.ExtendableMessage<
@@ -746,10 +750,21 @@ public final class AmberProto {
       return ackNum_;
     }
     
+    // optional uint32 listenerNum = 5;
+    public static final int LISTENERNUM_FIELD_NUMBER = 5;
+    private int listenerNum_;
+    public boolean hasListenerNum() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public int getListenerNum() {
+      return listenerNum_;
+    }
+    
     private void initFields() {
       type_ = amber.proto.AmberProto.DriverMsg.MsgType.DATA;
       synNum_ = 0;
       ackNum_ = 0;
+      listenerNum_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -783,6 +798,9 @@ public final class AmberProto {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeUInt32(4, ackNum_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeUInt32(5, listenerNum_);
+      }
       extensionWriter.writeUntil(64, output);
       getUnknownFields().writeTo(output);
     }
@@ -804,6 +822,10 @@ public final class AmberProto {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeUInt32Size(4, ackNum_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(5, listenerNum_);
       }
       size += extensionsSerializedSize();
       size += getUnknownFields().getSerializedSize();
@@ -936,6 +958,8 @@ public final class AmberProto {
         bitField0_ = (bitField0_ & ~0x00000002);
         ackNum_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
+        listenerNum_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -986,6 +1010,10 @@ public final class AmberProto {
           to_bitField0_ |= 0x00000004;
         }
         result.ackNum_ = ackNum_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.listenerNum_ = listenerNum_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1010,6 +1038,9 @@ public final class AmberProto {
         }
         if (other.hasAckNum()) {
           setAckNum(other.getAckNum());
+        }
+        if (other.hasListenerNum()) {
+          setListenerNum(other.getListenerNum());
         }
         this.mergeExtensionFields(other);
         this.mergeUnknownFields(other.getUnknownFields());
@@ -1070,6 +1101,11 @@ public final class AmberProto {
             case 32: {
               bitField0_ |= 0x00000004;
               ackNum_ = input.readUInt32();
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000008;
+              listenerNum_ = input.readUInt32();
               break;
             }
           }
@@ -1144,6 +1180,27 @@ public final class AmberProto {
         return this;
       }
       
+      // optional uint32 listenerNum = 5;
+      private int listenerNum_ ;
+      public boolean hasListenerNum() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public int getListenerNum() {
+        return listenerNum_;
+      }
+      public Builder setListenerNum(int value) {
+        bitField0_ |= 0x00000008;
+        listenerNum_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearListenerNum() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        listenerNum_ = 0;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:amber.DriverMsg)
     }
     
@@ -1176,13 +1233,14 @@ public final class AmberProto {
     java.lang.String[] descriptorData = {
       "\n\017drivermsg.proto\022\005amber\"H\n\tDriverHdr\022\022\n" +
       "\ndeviceType\030\001 \001(\005\022\020\n\010deviceID\030\002 \001(\005\022\025\n\tc" +
-      "lientIDs\030\003 \003(\005B\002\020\001\"\244\001\n\tDriverMsg\022&\n\004type" +
+      "lientIDs\030\003 \003(\005B\002\020\001\"\271\001\n\tDriverMsg\022&\n\004type" +
       "\030\002 \002(\0162\030.amber.DriverMsg.MsgType\022\016\n\006synN" +
-      "um\030\003 \001(\r\022\016\n\006ackNum\030\004 \001(\r\"I\n\007MsgType\022\010\n\004D" +
-      "ATA\020\001\022\010\n\004PING\020\002\022\010\n\004PONG\020\003\022\017\n\013CLIENT_DIED" +
-      "\020\004\022\017\n\013DRIVER_DIED\020\005*\004\010\010\020@*6\n\nDeviceType\022" +
-      "\013\n\007NINEDOF\020\001\022\014\n\010ROBOCLAW\020\002\022\r\n\tSTARGAZER\020" +
-      "\003B\033\n\013amber.protoB\nAmberProtoH\001"
+      "um\030\003 \001(\r\022\016\n\006ackNum\030\004 \001(\r\022\023\n\013listenerNum\030" +
+      "\005 \001(\r\"I\n\007MsgType\022\010\n\004DATA\020\001\022\010\n\004PING\020\002\022\010\n\004" +
+      "PONG\020\003\022\017\n\013CLIENT_DIED\020\004\022\017\n\013DRIVER_DIED\020\005" +
+      "*\004\010\010\020@*6\n\nDeviceType\022\013\n\007NINEDOF\020\001\022\014\n\010ROB" +
+      "OCLAW\020\002\022\r\n\tSTARGAZER\020\003B\033\n\013amber.protoB\nA" +
+      "mberProtoH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1202,7 +1260,7 @@ public final class AmberProto {
           internal_static_amber_DriverMsg_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_amber_DriverMsg_descriptor,
-              new java.lang.String[] { "Type", "SynNum", "AckNum", },
+              new java.lang.String[] { "Type", "SynNum", "AckNum", "ListenerNum", },
               amber.proto.AmberProto.DriverMsg.class,
               amber.proto.AmberProto.DriverMsg.Builder.class);
           return null;

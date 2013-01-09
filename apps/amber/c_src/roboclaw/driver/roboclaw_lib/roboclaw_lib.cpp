@@ -192,7 +192,7 @@ void rc_read_firmware_version(int fd, __u8 rc_address, __u8 *str) {
 
     uart_write(fd, 2, buffer);
 
-    int received = read(fd, str, 32);
+    read(fd, str, 32);
 }
 
 void rc_read_main_battery_voltage_level(int fd, __u8 rc_address, __u16 *value) {

@@ -9,7 +9,6 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.collections.keyvalue.MultiKey;
@@ -54,6 +53,16 @@ public class AmberClient implements Runnable {
 		} catch (UnknownHostException e) {
 			throw new AmberConnectionException();
 		}
+		
+		
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+		    public void run() {
+		    	for (AmberProxy proxy: proxyMap.values()) { 
+		    		logger.info(String.format("Terminating proxy: %d %d ", proxy.deviceType, proxy.deviceID));
+		    		proxy.terminateProxy();
+		    	}
+		    }
+		});
 	}
 	
 	@Override
@@ -188,6 +197,12 @@ public class AmberClient implements Runnable {
 	
 	private void handlePongMessage(DriverHdr header, DriverMsg message) {
 		
+	}
+	
+	public void terminateProxies() {
+		for (AmberProxy proxy: proxyMap.values()) {
+			proxy.terminateProxy();
+		}
 	}
 	
 }

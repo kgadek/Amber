@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
             	   		int msg_len = (buf[read + 2 + header_len] << 8) | buf[read + 2 + header_len + 1];
 
             	   		if (client) {
-            	   			printf("wysyłam przez udp msg_len: %d\n", msg_len);
+            	   			//printf("wysyłam przez udp msg_len: %d\n", msg_len);
 
 							ret = sendto(fd, buf, 2 + header_len + 2 + msg_len, 0x00, (struct sockaddr*)&cli_addr, cli_len);
 
@@ -140,15 +140,15 @@ int main(int argc, char *argv[]) {
                          perror("recvfrom");
                     } else {
 
-                         printf("przyszło: %i\n", len);
+                         //printf("przyszło: %i\n", len);
                          client = true;
 
                          int header_len = (buf[0] << 8) | buf[1];
                          int msg_len = (buf[2 + header_len] << 8) | buf[2 + header_len + 1];
-                         printf("msg_len: %d\n", msg_len);
+                         //printf("msg_len: %d\n", msg_len);
 
                          int sent = write(s2c[1], buf, len);
-                         printf("wysłano: %d\n", sent);
+                         //printf("wysłano: %d\n", sent);
                     }
 
                     

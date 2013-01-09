@@ -40,6 +40,10 @@ void RoboclawDriver::initializeDriver() {
 	scoped_lock<interprocess_mutex> lock(driverReadyMutex);
 
 	_fd = uart_open(_configuration->uart_port.c_str());
+	if (_fd == -1) {
+		LOG4CXX_FATAL(_logger, "Unable to open uart port: " << _configuration->uart_port);
+		return;
+	}
 
 	speed_t uart_speed;
 	switch(_configuration->uart_speed) {
@@ -94,6 +98,13 @@ void RoboclawDriver::readCurrentSpeed(__u8 roboclawAddress, CurrentSpeedStruct *
 
 	rc_read_speed_m2(_fd, roboclawAddress, &currentSpeedStruct->m2_speed, &m2_direction);
 	currentSpeedStruct->m2_direction = m2_direction == 0 ? false : true;
+
+}
+
+void RoboclawDriver::stopMotors() {
+	LOG4CXX_INFO(_logger, "Stopping motors.");
+	rc_drive_forward(_fd, _configuration->motor1_address, 0);
+	rc_drive_forward(_fd, _configuration->motor2_address, 0);
 
 }
 

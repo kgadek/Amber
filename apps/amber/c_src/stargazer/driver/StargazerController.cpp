@@ -67,7 +67,15 @@ void StargazerController::handleDataMsg(amber::DriverHdr *driverHdr, amber::Driv
 }
 
 void StargazerController::handleClientDiedMsg(int clientID) {
+	LOG4CXX_INFO(_logger, "Client " << clientID << " died, removing from scheduler and realtime listeners");
 
+	if (_amberScheduler->hasClient(clientID)) {
+		_amberScheduler->removeClient(clientID);
+	}
+
+	if (_realtimeListeners.count(clientID) > 0) {
+		_realtimeListeners.erase(clientID);
+	}
 }
 
 void StargazerController::operator()() {
@@ -106,6 +114,8 @@ amber::DriverMsg *StargazerController::buildLocalizationDataMsg() {
 	localizationData->set_zpos(_dataStruct->z_pos);
 	localizationData->set_angle(_dataStruct->angle);
 	localizationData->set_markerid(_dataStruct->marker_id);
+	localizationData->set_timestamp(_dataStruct->timestamp);
+	LOG4CXX_DEBUG(_logger, "Setting timestamp:" << _dataStruct->timestamp);
 
 	return message;
 }

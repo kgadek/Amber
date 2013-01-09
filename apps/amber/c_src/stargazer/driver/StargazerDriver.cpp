@@ -16,7 +16,6 @@
 #include <boost/thread.hpp>
 #include <boost/thread/thread_time.hpp>
 
-
 #include "StargazerCommon.h"
 #include "StargazerDriver.h"
 #include "uart/uart.h"
@@ -30,6 +29,8 @@ LoggerPtr StargazerDriver::_logger (Logger::getLogger("Stargazer.Driver"));
 
 StargazerDriver::StargazerDriver(StargazerConfiguration *configuration):
 		dataReady(false), driverReady(false), _configuration(configuration) {
+
+	_driverStartTime = boost::get_system_time();
 
 }
 
@@ -64,7 +65,9 @@ void StargazerDriver::operator()() {
 
 void StargazerDriver::initializeDriver() {
 
-#ifndef MOCK
+#ifdef MOCK
+	LOG4CXX_INFO(_logger, "Initializing mock driver.");
+#else
 
 	speed_t uart_speed;
 		switch(_configuration->uart_speed) {
@@ -74,7 +77,7 @@ void StargazerDriver::initializeDriver() {
 			break;
 
 		case 57600:
-			uart_speed = B19200;
+			uart_speed = B57600;
 			break;
 
 		case 115200:
@@ -87,7 +90,7 @@ void StargazerDriver::initializeDriver() {
 		}
 
 	LOG4CXX_INFO(_logger, "Initializing driver, port: " << _configuration->uart_port.c_str()
-				<< ", baud: " << uart_speed);
+				<< ", baud: " << _configuration->uart_speed);
 
 	_fd = uart_open(_configuration->uart_port.c_str());
 
@@ -97,7 +100,7 @@ void StargazerDriver::initializeDriver() {
 	}
 
 
-	uart_init(_fd, _configuration->uart_speed);
+	uart_init(_fd, uart_speed);
 	_file = fdopen(_fd, "r");
 
 	if (_file == NULL) {
@@ -125,6 +128,8 @@ void StargazerDriver::driverLoop() {
 			_dataStruct.z_pos = ((float)((rand() % 20000) - 100))/100.000;
 			_dataStruct.angle = ((float)((rand() % 36000) - 180))/100.000;
 
+			_dataStruct.timestamp = (unsigned int) (boost::get_system_time() - _driverStartTime).total_milliseconds();
+
 			// data ready
 			dataNotReady.notify_all();
 		}
@@ -144,10 +149,16 @@ void StargazerDriver::driverLoop() {
 
 			if (sscanf(line, "~^I%i|%f|%f|%f|%f`",
 					&_dataStruct.marker_id, &_dataStruct.angle, &_dataStruct.x_pos, &_dataStruct.y_pos, &_dataStruct.z_pos) == 5) {
+
+				LOG4CXX_DEBUG(_logger, "Received from Stargazer: x: " << _dataStruct.x_pos << ", y: " <<
+									_dataStruct.y_pos << ", z: " << _dataStruct.z_pos << ", angle: " << _dataStruct.angle);
+
+				_dataStruct.timestamp = (unsigned int) (boost::get_system_time() - _driverStartTime).total_milliseconds();
+
+				// data ready
+				dataNotReady.notify_all();
 			}
 
-			// data ready
-			dataNotReady.notify_all();
 		}
 	}
 

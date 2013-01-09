@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 
 import ninedof.proto.NinedofProto;
 import ninedof.proto.NinedofProto.DataRequest;
@@ -34,7 +35,7 @@ public class NinedofProxy extends AmberProxy {
 	private final ExtensionRegistry extensionRegistry;
 	
 	public NinedofProxy(AmberClient amberClient, int deviceID) {
-		super(DEVICE_TYPE, deviceID, amberClient);
+		super(DEVICE_TYPE, deviceID, amberClient, Logger.getLogger("NinedofProxy"));
 		
 		extensionRegistry = ExtensionRegistry.newInstance();
 		NinedofProto.registerAllExtensions(extensionRegistry);

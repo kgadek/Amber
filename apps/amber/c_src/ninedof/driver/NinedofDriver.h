@@ -47,9 +47,9 @@ public:
 	boost::interprocess::interprocess_condition noNeedToGetData;
 	boost::interprocess::interprocess_condition dataNotReady;
 
-	bool needToGetData;
-	bool dataReady;
 	bool driverReady;
+	bool dataReady;
+	bool needToGetData;
 
 private:
 	NinedofDataStruct _dataStruct;

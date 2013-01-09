@@ -43,6 +43,9 @@ struct RoboclawConfiguration {
 	unsigned int motors_p_const;
 	unsigned int motors_i_const;
 	unsigned int motors_d_const;
+
+	unsigned int pulses_per_revolution;
+	unsigned int wheel_radius;
 };
 
 

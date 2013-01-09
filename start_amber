@@ -1,7 +1,13 @@
-#!/bin/sh
+#!/bin/bash
+
+kill_em_all() {
+  echo "Zabijam procesy sterowników"
+  killall -SIGKILL roboclaw_driver
+  killall -SIGKILL stargazer_driver
+  killall -SIGKILL ninedof_driver
+}
+
+trap kill_em_all SIGINT
+
 
 erl -pa apps/*/ebin -pa deps/*/ebin -pz apps/*/.eunit -mnesia priv/mnesia -boot start_sasl -s mnesia -s amber
-
-# TODO: usunąć jak już driver będzie potrafił sam się zamknąć
-killall roboclaw_driver
-killall stargazer_driver

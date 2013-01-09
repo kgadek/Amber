@@ -1,6 +1,7 @@
 package roboclaw.client;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import roboclaw.proto.RoboclawProto;
 import amber.client.AmberClient;
@@ -21,7 +22,7 @@ public class RoboclawProxy extends AmberProxy {
 	private final ExtensionRegistry extensionRegistry;
 	
 	public RoboclawProxy(AmberClient amberClient, int deviceID) {
-		super(DEVICE_TYPE, deviceID, amberClient);
+		super(DEVICE_TYPE, deviceID, amberClient, Logger.getLogger("RoboclawProxy"));
 		
 		extensionRegistry = ExtensionRegistry.newInstance();
 		RoboclawProto.registerAllExtensions(extensionRegistry);	

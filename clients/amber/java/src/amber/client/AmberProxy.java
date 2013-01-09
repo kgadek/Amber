@@ -1,5 +1,9 @@
 package amber.client;
 
+import java.io.IOException;
+import java.util.logging.Logger;
+
+import amber.proto.AmberProto;
 import amber.proto.AmberProto.DriverHdr;
 import amber.proto.AmberProto.DriverMsg;
 
@@ -11,10 +15,13 @@ public abstract class AmberProxy {
 	protected final int deviceType;
 	protected final int deviceID;
 	
-	public AmberProxy(int deviceType, int deviceID, AmberClient amberClient) {
+	protected Logger logger;
+	
+	public AmberProxy(int deviceType, int deviceID, AmberClient amberClient, Logger logger) {
 		this.deviceType = deviceType;
 		this.deviceID = deviceID;
 		this.amberClient = amberClient;
+		this.logger = logger;
 		
 		amberClient.registerClient(deviceType, deviceID, this);
 	}
@@ -32,6 +39,19 @@ public abstract class AmberProxy {
 		driverHdrBuilder.setDeviceID(deviceID);
 		
 		return driverHdrBuilder.build();
+	}
+	
+	public void terminateProxy() {
+		logger.info("Sending terminate message");
+
+		DriverMsg.Builder driverMsgBuilder = DriverMsg.newBuilder();
+		driverMsgBuilder.setType(AmberProto.DriverMsg.MsgType.CLIENT_DIED);
+	
+		try {
+			amberClient.sendMessage(buildHeader(), driverMsgBuilder.build());
+		} catch (IOException e) {
+			logger.severe("Error in sending terminate message");
+		}
 	}
 	
 }

@@ -18,7 +18,7 @@ public class NinedofClientDemo implements AmberListener<NinedofData> {
 		
 		AmberClient client;
 		try {
-			client = new AmberClient("localhost", 26233);
+			client = new AmberClient("192.168.2.100", 26233);
 			Thread.sleep(1000);
 			NinedofProxy ninedofProxy = new NinedofProxy(client, 0);
 			

@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <cstdlib>
 #include <termios.h>
 #include <unistd.h>
 #include <linux/types.h>
@@ -6,9 +6,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include "uart.h"
+
+#include <boost/thread.hpp>
+#include <boost/thread/thread_time.hpp>
 
 int uart_open(const char *filename) {
     int fd;
@@ -57,12 +60,12 @@ void uart_close(int fd) {
     
     res = close(fd);
     if (res < 0) {
-        perror("close");        
+        //perror("close");
     }
 }
 
 int uart_write(int fd, int bytes, __u8 *buf) {
-    int res, chars_in_tx_queue;
+    int res;
 
     #ifdef DEBUG
     printf("write\n");
@@ -70,12 +73,13 @@ int uart_write(int fd, int bytes, __u8 *buf) {
     
     res = write(fd, buf, bytes);
     if (res < 0) {
-        perror("write");
+        //perror("write");
         return -1;
     }
 
     // wait for buffer to empty
-    do {
+    while (1) {
+    	boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     	ioctl (fd, TIOCOUTQ, &chars_in_tx_queue);
     } while (chars_in_tx_queue > 0);
 
