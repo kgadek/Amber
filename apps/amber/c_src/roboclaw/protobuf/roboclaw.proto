@@ -1,0 +1,56 @@
+package amber.roboclaw_proto;
+option java_package = "roboclaw.proto";
+option java_outer_classname = "RoboclawProto";
+
+import "drivermsg.proto";
+
+extend amber.DriverMsg {
+
+	repeated MotorsCommand motorsCommands = 10;
+	repeated CurrentSpeedRequest currentSpeedRequests = 11;
+	repeated CurrentSpeed currentSpeeds = 12;
+	repeated SetPidConstantsRequest setPidConstantsRequests = 13;
+}
+
+message MotorsCommand {
+
+	required uint32 address = 1;
+	
+	optional int32 m1Speed = 2;
+	optional uint32 m1Accel = 3;
+	optional uint32 m1Distance = 4;
+	optional bool m1Buffered = 5;
+	
+	optional int32 m2Speed = 6;
+	optional uint32 m2Accel = 7;
+	optional uint32 m2Distance = 8;
+	optional bool m2Buffered = 9;		
+
+}
+
+message SetPidConstantsRequest {
+
+	required uint32 address = 1;
+			
+	required uint32 qpps = 2;
+	required uint32 p = 3;
+	required uint32 i = 4;
+	required uint32 d = 5;
+
+} 
+
+message CurrentSpeedRequest {
+
+	required uint32 address = 1;	
+
+	required bool m1Speed = 2 [default = false];
+	required bool m2Speed = 3 [default = false];
+}
+
+message CurrentSpeed {
+
+	required uint32 address = 1;	
+
+	optional int32 m1Speed = 2;
+	optional int32 m2Speed = 3; 
+}
