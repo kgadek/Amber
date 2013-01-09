@@ -1,0 +1,38 @@
+package amber.ninedof_proto;
+option java_package = "ninedof.proto";
+option java_outer_classname = "NinedofProto";
+
+import "drivermsg.proto";
+
+extend amber.DriverMsg {
+	optional SensorData sensorData = 10;	
+	optional DataRequest dataRequest = 11;	
+	optional SubscribeAction subscribeAction = 12;
+}
+
+message SensorData {
+	message AxisData {
+		required sint32 xAxis = 1;
+		required sint32 yAxis = 2;
+		required sint32 zAxis = 3; 
+	}	
+	
+	optional AxisData accel = 1;
+	optional AxisData gyro = 2;
+	optional AxisData magnet = 3;	
+     optional uint32 timestamp = 4;
+}
+
+message DataRequest {
+	optional bool accel = 1;
+	optional bool gyro = 2;
+	optional bool magnet = 3;
+}
+
+message SubscribeAction {
+	
+	optional uint32 freq = 1;
+	optional bool accel = 2;
+	optional bool gyro = 3;
+	optional bool magnet = 4;
+}
