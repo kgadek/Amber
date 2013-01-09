@@ -29,7 +29,7 @@ Projekt inżynierski Konrada Gądka i Michała Konarskiego. Składa się z
   - sterowników urządzeń (C/C++)
   - aplikacji klienckich (Erlang, Java)
 
-
+Projekt jest w stadium rozwojowym. Wszystkie flagi debugowania są włączone.
 
 ## Dwa słowa o testach.
 

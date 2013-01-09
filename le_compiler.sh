@@ -10,7 +10,7 @@ function compile {
   local DRV_EXTRA_INC="${DRV_SRC}/$3"
 
   local CXX="g++"
-  local CXXFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wformat -Winit-self -Wunused -Wfloat-equal -Wcast-qual -Wwrite-strings -Winline -Wstack-protector -Wunsafe-loop-optimizations -Wlogical-op -Wmissing-include-dirs -Wconversion -Wmissing-declarations -Wno-long-long -O2"
+  local CXXFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wformat -Winit-self -Wunused -Wfloat-equal -Wcast-qual -Wwrite-strings -Winline -Wstack-protector -Wunsafe-loop-optimizations -Wlogical-op -Wmissing-include-dirs -Wconversion -Wmissing-declarations -Wno-long-long -O0 -D_XOPEN_SOURCE=500 -ggdb"
   local LDFLAGS="-lm -lrt -lpthread -llog4cxx -lboost_thread -lprotobuf -lboost_program_options"
 
   "$CXX" -o "${ROOT}/priv/${DRV}_driver" \

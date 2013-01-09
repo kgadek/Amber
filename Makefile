@@ -36,6 +36,9 @@ drivers: roboclaw_driver
 roboclaw_driver: amber_proto roboclaw.proto
 	bash le_compiler.sh roboclaw "roboclaw_lib/*.cpp" roboclaw_lib
 
+stargazer_driver: amber_proto stargazer.proto
+	bash le_compiler.sh stargazer "uart/*.cpp" uart
+
 amber_proto:
 	protoc -I=$(C_SRC)/protobuf --cpp_out=$(C_SRC)/protobuf $(C_SRC)/protobuf/drivermsg.proto
 
