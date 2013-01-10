@@ -1,6 +1,7 @@
 -module(amber_client_test).
 
 -include_lib("proper/include/proper.hrl").
+% -define(NODEBUG, 1).
 -include_lib("eunit/include/eunit.hrl").
 -include ("include/drivermsg_pb.hrl").
 -include ("include/common.hrl").
@@ -48,38 +49,30 @@ prop_warmup() ->
 
 prop_msg_from_remote_client() ->
   ?FORALL(Xs,
-          list(pos_integer()),
-    lists:all(fun(X) -> X=:=true end,
-              lists:map(fun msg_send_receive/1, Xs))).
+          list(pos_integer()), % maksymalny przechodzący test: integer(1,22)
+    begin
+      lists:all(fun(X) -> X=:=true end,
+                lists:map(fun msg_send_receive/1, Xs))
+    end).
 
 msg_send_receive(MsgNumber) ->
   {DevT,DevI} = {2,3},
   SynNum = amber_client:get_synnum(),
   Hdr = #driverhdr{devicetype=DevT, deviceid=DevI},
-  Msg = #drivermsg{ type='DATA',
-                    synnum=SynNum,
-                    acknum=SynNum % tego nie powinno niby być, ale co tam
-                  },
-  MsgBinary = drivermsg_pb:encode_drivermsg(Msg),
-  Receiver = spawn_link(fun receiver/0),
-  Self = self(),
-  Ref = make_ref(),
-  
+  MsgBinary = drivermsg_pb:encode_drivermsg(#drivermsg{ type='DATA',
+                                                        synnum=SynNum,
+                                                        acknum=SynNum }), % acknum nie powinno niby być w wysyłanym żądaniu, ale co tam
   Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=SynNum},
-  Val = #dispd_val{recpid=Receiver},
+  Val = #dispd_val{recpid=self()},
 
-  Receiver ! {
-    fun (F,N) when N > 0 ->
-          receive #amber_client_msg{hdr=#driverhdr{devicetype=DevT, deviceid=DevI},
-                                    msg=#drivermsg{acknum=SynNum}}
-                  -> F(F,N-1)
-          end;
-        (_,_) ->
-          Self ! {true, Ref}
-    end, [MsgNumber]
-  },
   amber_client:register_receiver(Key, Val),
   [amber_client:send_to_amber(Hdr, MsgBinary) || _ <- lists:seq(1,MsgNumber)],
-  receive {Bool, Ref} -> Bool
-  after   500         -> false
-  end.
+  counter_acm(MsgNumber,MsgNumber,DevT,DevI,SynNum).
+
+counter_acm(MsgNumber,N,DevT,DevI,SynNum) when N>0 ->
+  receive #amber_client_msg{hdr=#driverhdr{devicetype=DevT, deviceid=DevI}, msg=#drivermsg{acknum=SynNum}} ->
+    counter_acm(MsgNumber,N-1,DevT,DevI,SynNum)
+  after 500 ->
+    ?debugFmt("counter_acm ma jeszcze do otrzymania ~p, dostał n=~p z msgnumber=~p, synnum=~p", [N,MsgNumber-N,MsgNumber,SynNum])
+  end;
+counter_acm(_,_,_,_,_) -> true.
