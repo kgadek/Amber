@@ -11,6 +11,7 @@
 -export([start_link/0]).
 % api
 -export([register_receiver/2, deregister_receiver/1, get_synnum/0, send_to_amber/2]).
+-export([get_newest_amber_client_msg/1, get_newest_amber_client_msg/2]).
 -export([env/1]).
 
 -record(state, {aip, aport, socket, dict, synnumnext}).
@@ -23,7 +24,7 @@ start_link() ->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-	{ok, Socket} = gen_udp:open(env(amber_client_port), [binary]),
+	{ok, Socket} = gen_udp:open(env(amber_client_port), [binary, {recbuf, 32768}, {sndbuf, 32768}]),
 	{ok, #state{aip    = env(amber_ip), aport = env(amber_port),
 							socket = Socket,        dict  = gb_trees:empty(),
 							%% TODO: synnymnext wywalić do mnesii, niedobrze jak jest w 'volatile'
@@ -31,12 +32,12 @@ init([]) ->
 
 terminate(_Reason, #state{socket = Socket}) -> gen_udp:close(Socket).
 
-handle_info({udp, Socket, _IP, Port, FullMsg}, #state{socket=Socket, dict=Dict} = State) ->
+handle_info({udp, Socket, _IP, _Port, FullMsg}, #state{socket=Socket, dict=Dict} = State) ->
 	{#driverhdr{devicetype=DevT, deviceid=DevI} = Hdr, MsgB} = router:unpack_msg(FullMsg),
 	#drivermsg{acknum = AckNum} = Msg                        = drivermsg_pb:decode_drivermsg(MsgB),
 	Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=AckNum},
 	case gb_trees:lookup(Key, Dict) of
-		{value, #dispd_val{recpid=RecPid, post=Post}} ->
+		{value, #dispd_val{recpid=RecPid, post=_Post}} ->
 			case process_info(RecPid) of
 				undefined ->
 					NDict = gb_trees:delete_any(Key, Dict),
