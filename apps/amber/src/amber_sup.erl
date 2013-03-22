@@ -8,7 +8,7 @@
 -ifdef(TEST).
 -define(SETTINGS_FILE, "../../amber/test/test_settings.config").
 -else.
--define(SETTINGS_FILE, "apps/amber/src/settings.config").
+-define(SETTINGS_FILE, "apps/amber/priv/settings.config").
 -endif. 
 
 %% Helper macro for declaring children of supervisor
