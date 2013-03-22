@@ -47,6 +47,35 @@ Wow. Istnieją.
   - `make drivers` # kompiluje wszystkie sterowniki
   - `make roboclaw_drivers` # kompiluje konkretny sterownik
 
+## Uruchamianie
+
+W skrócie: serwer zwykle będzie działać wiecznie (w wypadku awarii sam się zrestartuje),
+klient jest /jednorazowy/.
+
+### Uruchomienie serwera (tryb: nieśmiertelny)
+
+1. Otwórz skrypt start_amber i popraw zmienną PTH -- ustaw ją na bieżący katalog, dodaj "/" na końcu
+2. Wywołaj polecenie `./start_amber`
+
+### Zatrzymanie serwera (tryb: nieśmiertelny)
+
+Niezbyt intuicyjne: `killall heart`
+
+### Uruchomienie serwera z interaktywną konsolą
+
+Z pliku `start_amber` wyciągnąć polecenie uruchomieniowe i usunąć `-detached -heart` -- te
+dwie opcje oznaczają (odpowiednio) uruchomienie bez konsoli i uruchomienie procesu-nadzorcy,
+sprawdzającego, czy Erlangowa VM nadal żyje.
+
+A, jeszcze jedno -- zamknięcie aplikacji `amber` spowoduje zamknięcie całej
+maszyny wirtualnej. Odpowiada za to opcja `permanent`.
+Patrz: plik `amber.erl`, linia 8: `start() -> application:start(amber, permanent).`
+
+### Uruchomienie klienta z interaktywną konsolą
+
+Poniższe polecenie otwiera shell z załadowanym klientem:
+
+    ./start_client
 
 ## Git workflow
 

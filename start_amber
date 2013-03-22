@@ -1,7 +1,15 @@
 #!/bin/sh
 
-erl -pa apps/*/ebin -pa deps/*/ebin -pz apps/*/.eunit -mnesia priv/mnesia -boot start_sasl -s mnesia -s amber
+
+PTH="/home/konrad/Amber/"
 
 # TODO: usunąć jak już driver będzie potrafił sam się zamknąć
 killall roboclaw_driver
 killall stargazer_driver
+
+# By uruchomić Amber jako daemon systemowy:
+#   http://stackoverflow.com/q/6830806/547223
+
+export HEART_COMMAND="$PTH""start_amber"
+echo "$HEART_COMMAND" >> "$PTH"amber_log
+erl -pa "$PTH"apps/*/ebin -pa "$PTH"deps/*/ebin -mnesia "$PTH"priv/mnesia -boot start_sasl -s mnesia -s amber -detached -heart
