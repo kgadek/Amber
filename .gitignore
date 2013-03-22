@@ -4,9 +4,12 @@ apps/*/ebin
 apps/*/doc
 apps/*/priv
 apps/*/.eunit
+pipes/
+log/
 *.sublime-workspace
 *.dump
 *.beam
 *.log
 *.trace
 *.txt
+*.tmp
