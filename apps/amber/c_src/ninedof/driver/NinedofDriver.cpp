@@ -63,7 +63,9 @@ void NinedofDriver::lockUntilDriverReady() {
 
 void NinedofDriver::initializeDriver() {
 
-#ifndef MOCK
+#ifdef MOCK
+	LOG4CXX_INFO(logger, "Initializing mock driver.");
+#else
 
 	_fd = i2c_open(_configuration->i2c_port.c_str());
 	if (_fd == -1) {

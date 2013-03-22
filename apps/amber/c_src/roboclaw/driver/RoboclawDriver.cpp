@@ -40,6 +40,10 @@ void RoboclawDriver::initializeDriver() {
 	scoped_lock<interprocess_mutex> lock(driverReadyMutex);
 
 	_fd = uart_open(_configuration->uart_port.c_str());
+	if (_fd == -1) {
+		LOG4CXX_FATAL(_logger, "Unable to open uart port: " << _configuration->uart_port);
+		return;
+	}
 
 	speed_t uart_speed;
 	switch(_configuration->uart_speed) {
@@ -97,6 +101,13 @@ void RoboclawDriver::readCurrentSpeed(__u8 roboclawAddress, CurrentSpeedStruct *
 
 }
 
+void RoboclawDriver::stopMotors() {
+	LOG4CXX_INFO(_logger, "Stopping motors.");
+	rc_drive_forward(_fd, _configuration->motor1_address, 0);
+	rc_drive_forward(_fd, _configuration->motor2_address, 0);
+
+}
+
 void RoboclawDriver::sendMotorsEncoderCommand(__u8 roboclawAddress, MotorCommandStruct *m1, MotorCommandStruct *m2) {
 	scoped_lock<interprocess_mutex> lock(serialPortMutex);
 
@@ -105,7 +116,7 @@ void RoboclawDriver::sendMotorsEncoderCommand(__u8 roboclawAddress, MotorCommand
 			&& m2 != NULL && !m2->accel_set && !m2->distance_set) {
 
 		rc_drive_speed(_fd, roboclawAddress, m1->speed, m2->speed);
-		LOG4CXX_DEBUG(_logger, "rc_drive_speed, m1_s: " << m1->speed << ", m2_s: " << m2->speed);
+		LOG4CXX_DEBUG(_logger, "rc_drive_speed, roboclawAddress: " << (int)roboclawAddress << ", m1_s: " << m1->speed << ", m2_s: " << m2->speed);
 		return;
 	}
 

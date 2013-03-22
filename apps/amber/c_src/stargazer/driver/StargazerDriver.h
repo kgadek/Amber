@@ -43,6 +43,8 @@ private:
 	int _fd;
 	FILE *_file;
 
+	boost::system_time _driverStartTime;
+
 	StargazerConfiguration *_configuration;
 
 	static log4cxx::LoggerPtr _logger;

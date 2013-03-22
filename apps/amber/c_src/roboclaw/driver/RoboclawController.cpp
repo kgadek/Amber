@@ -12,6 +12,7 @@
 
 #include <boost/program_options.hpp>
 #include <string>
+#include <cmath>
 
 using namespace std;
 using namespace boost;
@@ -69,7 +70,9 @@ void RoboclawController::handleDataMsg(amber::DriverHdr *driverHdr, amber::Drive
 }
 
 void RoboclawController::handleClientDiedMsg(int clientID) {
+	LOG4CXX_INFO(_logger, "Client " << clientID << " died");
 
+	_roboclawDriver->stopMotors();
 }
 
 void RoboclawController::operator()() {
@@ -115,33 +118,45 @@ void RoboclawController::handleMotorsEncoderCommand(int sender, int synNum, ambe
 	MotorCommandStruct m1, m2;
 
 	// m1
-	m1.speed = motorsCommand->m1speed();
+	m1.speed = toQpps(motorsCommand->m1speed());
 
 	m1.accel_set = motorsCommand->has_m1accel();
 	if (m1.accel_set) {
-		m1.accel = motorsCommand->m1accel();
+		m1.accel = toQpps(motorsCommand->m1accel());
 	}
 
 	m1.distance_set = motorsCommand->has_m1distance();
 	if (m1.distance_set) {
-		m1.distance = motorsCommand->m1distance();
+		m1.distance = toQpps(motorsCommand->m1distance());
 	}
 
 	// m2
-	m2.speed = motorsCommand->m2speed();
+	m2.speed = toQpps(motorsCommand->m2speed());
 
 	m2.accel_set = motorsCommand->has_m2accel();
 	if (m2.accel_set) {
-		m2.accel = motorsCommand->m2accel();
+		m2.accel = toQpps(motorsCommand->m2accel());
 	}
 
 	m2.distance_set = motorsCommand->has_m2distance();
 	if (m2.distance_set) {
-		m2.distance = motorsCommand->m2distance();
+		m2.distance = toQpps(motorsCommand->m2distance());
 	}
 
 	_roboclawDriver->sendMotorsEncoderCommand(motorsCommand->address(), &m1, &m2);
 }
+
+int RoboclawController::toQpps(int in) {
+
+	double rpm = in / (double)(_configuration->wheel_radius * M_PI * 2);
+
+	int out = (int)(rpm * _configuration->pulses_per_revolution);
+
+	LOG4CXX_DEBUG(_logger, "toOpps: " << in << ", " <<  out);
+
+	return out;
+}
+
 
 void RoboclawController::parseConfigurationFile(const char *filename) {
 
@@ -159,7 +174,9 @@ void RoboclawController::parseConfigurationFile(const char *filename) {
 			("roboclaw.motors_p_const", value<unsigned int>(&_configuration->motors_p_const)->default_value(65536))
 			("roboclaw.motors_i_const", value<unsigned int>(&_configuration->motors_i_const)->default_value(32768))
 			("roboclaw.motors_d_const", value<unsigned int>(&_configuration->motors_d_const)->default_value(16384))
-	;
+			("roboclaw.pulses_per_revolution", value<unsigned int>(&_configuration->pulses_per_revolution)->default_value(1865))
+			("roboclaw.wheel_radius", value<unsigned int>(&_configuration->wheel_radius)->default_value(60));
+
 
 	variables_map vm;
 

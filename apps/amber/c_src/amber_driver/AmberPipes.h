@@ -32,9 +32,8 @@ public:
 	virtual ~AmberPipes();
 
 	void operator()();
-	void readMsgFromPipe();
-	void writeMsgToPipe(amber::DriverHdr *driverMsgHeader, amber::DriverMsg *driverMsg);
 	void handlePingMsg(amber::DriverHdr *driverMsgHeader, amber::DriverMsg *driverMsg);
+	void writeMsgToPipe(amber::DriverHdr *driverMsgHeader, amber::DriverMsg *driverMsg);
 
 private:
 	MessageHandler *_messageHandler;
@@ -47,6 +46,7 @@ private:
 
 	static log4cxx::LoggerPtr _logger;
 
+	void readMsgFromPipe();
 	void runProcess();
 
 	int readExact(int len);
