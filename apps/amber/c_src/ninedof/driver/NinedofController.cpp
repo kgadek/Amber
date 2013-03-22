@@ -48,15 +48,15 @@ NinedofController::~NinedofController() {
 }
 
 void NinedofController::handleDataRequestMsg(int sender, int synNum, ninedof_proto::DataRequest *dataRequest) {
-	LOG4CXX_INFO(_logger, "Got DataRequest message");
+	LOG4CXX_DEBUG(_logger, "Got DataRequest message");
 
-	LOG4CXX_INFO(_logger, "Sending SensorData message");
+	LOG4CXX_DEBUG(_logger, "Sending SensorData message");
 	sendSensorDataMsg(sender, synNum, dataRequest->accel(), dataRequest->gyro(), dataRequest->magnet());
 
 }
 
 void NinedofController::handleSubscribeActionMsg(int sender, ninedof_proto::SubscribeAction *subscribeAction) {
-	LOG4CXX_INFO(_logger, "Got SubscribeAction message");
+	LOG4CXX_DEBUG(_logger, "Got SubscribeAction message");
 
 	if (subscribeAction->freq() == 0) {
 		LOG4CXX_DEBUG(_logger, "Removing client id: " << sender);
@@ -95,7 +95,7 @@ DriverMsg *NinedofController::buildSensorDataMsg(bool accel, bool gyro, bool mag
 
 	ninedof_proto::SensorData *sensorData = message->MutableExtension(ninedof_proto::sensorData);
 
-	LOG4CXX_DEBUG(_logger, "buildSensorDataMsg " << accel << " " << gyro << " " << magnet);
+	//LOG4CXX_DEBUG(_logger, "buildSensorDataMsg " << accel << " " << gyro << " " << magnet);
 
 	ninedof_proto::SensorData::AxisData *axisData;
 	if (accel) {
@@ -157,7 +157,10 @@ void NinedofController::handleDataMsg(DriverHdr *driverHdr, DriverMsg *driverMsg
 void NinedofController::handleClientDiedMsg(int clientID) {
 	LOG4CXX_INFO(_logger, "Client " << clientID << " died, removing from scheduler");
 
-	_amberScheduler->removeClient(clientID);
+	if (_amberScheduler->hasClient(clientID)) {
+		_amberScheduler->removeClient(clientID);
+	}
+
 }
 
 void NinedofController::operator()() {

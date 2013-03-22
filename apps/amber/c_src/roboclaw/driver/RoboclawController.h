@@ -44,6 +44,7 @@ private:
 	void handleCurrentSpeedRequest(int sender, int synNum, amber::roboclaw_proto::CurrentSpeedRequest *currentSpeedRequest);
 	void handleMotorsEncoderCommand(int sender, int synNum, amber::roboclaw_proto::MotorsCommand *motorsCommand);
 	void parseConfigurationFile(const char *filename);
+	int toQpps(int in);
 
 };
 

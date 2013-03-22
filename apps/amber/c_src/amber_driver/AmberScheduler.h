@@ -65,6 +65,7 @@ public:
 	void addClient(int clientId, int freq, T *details);
 	void editClient(int clientId, int newFreq);
 	void removeClient(int clientId);
+	bool hasClient(int clientId);
 
 private:
 	void runScheduler();
@@ -120,6 +121,11 @@ void AmberScheduler<T>::removeClient(int clientId) {
 	if (_schedulerMap.count(clientId) > 0) {
 		_schedulerMap[clientId]->outdated = true;
 	}
+}
+
+template <class T>
+bool AmberScheduler<T>::hasClient(int clientId) {
+	return _schedulerMap.count(clientId) > 0;
 }
 
 template <class T>
