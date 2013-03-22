@@ -1,15 +1,14 @@
 #!/bin/sh
 
+set -x 
 
-PTH="/home/konrad/Amber/"
+export RUNCMD=".run_cmd.tmp"
+export PWD="$(pwd)"
 
-# TODO: usunąć jak już driver będzie potrafił sam się zamknąć
-killall roboclaw_driver
-killall stargazer_driver
+export HEART_COMMAND="$(which sh) $PWD/$RUNCMD"
 
-# By uruchomić Amber jako daemon systemowy:
-#   http://stackoverflow.com/q/6830806/547223
+cat > "$RUNCMD" <<EOF
+run_erl -daemon pipes/ log/ 'erl -boot start_sasl -pa $PWD/apps/*/ebin -pa $PWD/deps/*/ebin -mnesia $PWD/priv/mnesia -s mnesia -s amber -heart'
+EOF
 
-export HEART_COMMAND="$PTH""start_amber"
-echo "$HEART_COMMAND" >> "$PTH"amber_log
-erl -pa "$PTH"apps/*/ebin -pa "$PTH"deps/*/ebin -mnesia "$PTH"priv/mnesia -boot start_sasl -s mnesia -s amber -detached -heart
+sh "$RUNCMD"

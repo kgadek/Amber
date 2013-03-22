@@ -3,7 +3,8 @@
 	[
 		{
 			"path": ".",
-			"folder_exclude_patterns": ["deps", "rel/amber", "apps/*/.eunit", "apps/*/ebin", "apps/*/bin", "apps/*/doc"]
+			"folder_exclude_patterns": ["deps", "rel/amber", "apps/*/.eunit", "apps/*/ebin", "apps/*/bin", "apps/*/doc", "log", "pipes"],
+			"file_exclude_patterns": ["*.tmp", "*.sublime-workspace", "rebar"]
 		}
 	],
 	"settings":

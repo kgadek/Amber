@@ -52,28 +52,16 @@ Wow. Istnieją.
 W skrócie: serwer zwykle będzie działać wiecznie (w wypadku awarii sam się zrestartuje),
 klient jest /jednorazowy/.
 
-### Uruchomienie serwera (tryb: nieśmiertelny)
+### Serwer
 
-1. Otwórz skrypt start_amber i popraw zmienną PTH -- ustaw ją na bieżący katalog, dodaj "/" na końcu
-2. Wywołaj polecenie `./start_amber`
+1. Uruchom skrypt `./start_amber`. Uruchomił się w tle. Logi uruchomieniowe są w katalogu `log`.
+2. By podłączyć się do konsoli erlanga, wywołaj polecenie `to_erl pipes/` (slash na końcu jest potrzebny).
+3. By odłączyć się od konsoli: Ctrl-D.
+4. By zamknąć erlanga:
+    a. Podłącz się do konsoli i wywołaj polecenie `q().` (razem z kropką na końcu).
+    b. `killall heart`.
 
-### Zatrzymanie serwera (tryb: nieśmiertelny)
-
-Niezbyt intuicyjne: `killall heart`
-
-### Uruchomienie serwera z interaktywną konsolą
-
-Z pliku `start_amber` wyciągnąć polecenie uruchomieniowe i usunąć `-detached -heart` -- te
-dwie opcje oznaczają (odpowiednio) uruchomienie bez konsoli i uruchomienie procesu-nadzorcy,
-sprawdzającego, czy Erlangowa VM nadal żyje.
-
-A, jeszcze jedno -- zamknięcie aplikacji `amber` spowoduje zamknięcie całej
-maszyny wirtualnej. Odpowiada za to opcja `permanent`.
-Patrz: plik `amber.erl`, linia 8: `start() -> application:start(amber, permanent).`
-
-### Uruchomienie klienta z interaktywną konsolą
-
-Poniższe polecenie otwiera shell z załadowanym klientem:
+### Klient
 
     ./start_client
 
