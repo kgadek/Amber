@@ -10,5 +10,7 @@
                   mnesia
                  ]},
   {mod, { amber, []}},
-  {env, []}
+  {env, [ {tcp_port, 8899}
+        , {tcp_active_listeners, 2}
+        ]}
  ]}.
