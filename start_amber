@@ -1,7 +1,14 @@
 #!/bin/sh
 
-erl -pa apps/*/ebin -pa deps/*/ebin -pz apps/*/.eunit -mnesia priv/mnesia -boot start_sasl -s mnesia -s amber
+set -x 
 
-# TODO: usunąć jak już driver będzie potrafił sam się zamknąć
-killall roboclaw_driver
-killall stargazer_driver
+export RUNCMD=".run_cmd.tmp"
+export PWD="$(pwd)"
+
+export HEART_COMMAND="$(which sh) $PWD/$RUNCMD"
+
+cat > "$RUNCMD" <<EOF
+run_erl -daemon pipes/ log/ 'erl -boot start_sasl -pa $PWD/apps/*/ebin -pa $PWD/deps/*/ebin -mnesia $PWD/priv/mnesia -s mnesia -s amber -heart'
+EOF
+
+sh "$RUNCMD"

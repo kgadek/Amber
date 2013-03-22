@@ -114,6 +114,6 @@ stargazer_get_position(SynNum, Timeout) ->
       -> #localization{}.
 stargazer_drivermsg_to_location(Msg) ->
   DMsg = stargazer_pb:decode_extensions(Msg),
-  {ok, #localizationdata{xpos=X,ypos=Y,zpos=Z,angle=A,markerid=M,timestamp=_T}}
+  {ok, #localizationdata{xpos=X,ypos=Y,zpos=Z,angle=A,markerid=M, timestamp=T}}
               = stargazer_pb:get_extension(DMsg, localizationdata),
-  #localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M}.
+  #localization{xpos=X, ypos=Y, zpos=Z, angle=A, markerid=M, timestamp=T}.

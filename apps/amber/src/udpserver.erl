@@ -32,7 +32,7 @@ receive_msg(Dest, FullMsg) -> gen_server:cast(?MODULE, {received, Dest, FullMsg}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(Port) ->
-	{ok, Socket} = gen_udp:open(Port, [binary]), % Socket zamykany w terminate/2
+	{ok, Socket} = gen_udp:open(Port, [binary, {recbuf, 32768}, {sndbuf, 32768}]), % Socket zamykany w terminate/2
 	{ok, #state{conf = Port, socket = Socket}}.
 
 handle_cast({received, {IP, RPort}, #routing_msg{hdr = Hdr, msg = Msg}}, #state{socket = Socket} = State) ->

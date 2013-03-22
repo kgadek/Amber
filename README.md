@@ -29,18 +29,41 @@ Projekt inżynierski Konrada Gądka i Michała Konarskiego. Składa się z
   - sterowników urządzeń (C/C++)
   - aplikacji klienckich (Erlang, Java)
 
-
+Projekt jest w stadium rozwojowym. Wszystkie flagi debugowania są włączone.
 
 ## Dwa słowa o testach.
 
 Wow. Istnieją.
 
 
-## Kompilacja
+## Pierwsza kompilacja
 
-1. `make` # ściąga zależności, kompiluje projekt
+1. `make all` # ściąga zależności, kompiluje projekt i sterowniki
 1. `make test` # testy
 
+## Następne kompilacje
+
+  - `make` # kompiluje zmiany wprowadzone do mediatora (`amber`) i klienta (`amber_client`)
+  - `make drivers` # kompiluje wszystkie sterowniki
+  - `make roboclaw_drivers` # kompiluje konkretny sterownik
+
+## Uruchamianie
+
+W skrócie: serwer zwykle będzie działać wiecznie (w wypadku awarii sam się zrestartuje),
+klient jest /jednorazowy/.
+
+### Serwer
+
+1. Uruchom skrypt `./start_amber`. Uruchomił się w tle. Logi uruchomieniowe są w katalogu `log`.
+2. By podłączyć się do konsoli erlanga, wywołaj polecenie `to_erl pipes/` (slash na końcu jest potrzebny).
+3. By odłączyć się od konsoli: Ctrl-D.
+4. By zamknąć erlanga:
+    a. Podłącz się do konsoli i wywołaj polecenie `q().` (razem z kropką na końcu).
+    b. `killall heart`.
+
+### Klient
+
+    ./start_client
 
 ## Git workflow
 

@@ -10,9 +10,9 @@
 
 
 -ifdef(TEST).
--define(SETTINGS_FILE, "../src/test_settings.config").
+-define(SETTINGS_FILE, "../priv/test_settings.config").
 -else.
--define(SETTINGS_FILE, "src/settings.config").
+-define(SETTINGS_FILE, "priv/settings.config").
 -endif. 
 
 

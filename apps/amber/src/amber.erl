@@ -5,7 +5,7 @@
 %% Application callbacks
 -export([start/0, start/2, stop/1]).
 
-start() -> application:start(amber).
+start() -> application:start(amber, permanent).
 
 %% ===================================================================
 %% Application callbacks
