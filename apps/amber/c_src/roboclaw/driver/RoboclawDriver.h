@@ -26,7 +26,7 @@ public:
 
 	void initializeDriver();
 	void readCurrentSpeed(__u8 roboclawAddress, CurrentSpeedStruct *currentSpeedStruct);
-	void sendMotorsEncoderCommand(__u8 roboclawAddress, MotorCommandStruct *m1, MotorCommandStruct *m2);
+	void sendMotorsEncoderCommand(MotorsCommandStruct *mc);
 	void stopMotors();
 
 	boost::interprocess::interprocess_mutex driverReadyMutex;

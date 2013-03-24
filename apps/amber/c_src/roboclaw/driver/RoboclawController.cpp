@@ -48,24 +48,17 @@ void RoboclawController::handleDataMsg(amber::DriverHdr *driverHdr, amber::Drive
 	int clientId = driverHdr->clientids_size() > 0 ? driverHdr->clientids(0) : 0;
 
 	// DataRequest
-	if (driverMsg->ExtensionSize(roboclaw_proto::currentSpeedRequests) > 0) {
+	if (driverMsg->HasExtension(roboclaw_proto::currentSpeedRequest)) {
 
 		if (!driverMsg->has_synnum()) {
 			LOG4CXX_WARN(_logger, "Got CurrentSpeedRequest, but syn num not set. Ignoring.");
 			return;
 		}
 
-		for (int i = 0; i < driverMsg->ExtensionSize(roboclaw_proto::currentSpeedRequests); i++) {
-			amber::roboclaw_proto::CurrentSpeedRequest *currentSpeedRequest = driverMsg->MutableExtension(roboclaw_proto::currentSpeedRequests, i);
-			handleCurrentSpeedRequest(clientId, driverMsg->synnum(), currentSpeedRequest);
-		}
+		handleCurrentSpeedRequest(clientId, driverMsg->synnum(), driverMsg->MutableExtension(roboclaw_proto::currentSpeedRequest));
 
-	} else if (driverMsg->ExtensionSize(roboclaw_proto::motorsCommands) > 0) {
-
-		for (int i = 0; i < driverMsg->ExtensionSize(roboclaw_proto::motorsCommands); i++) {
-			roboclaw_proto::MotorsCommand *motorsCommand = driverMsg->MutableExtension(roboclaw_proto::motorsCommands, i);
-			handleMotorsEncoderCommand(clientId, driverMsg->synnum(), motorsCommand);
-		}
+	} else if (driverMsg->HasExtension(roboclaw_proto::motorsCommand)) {
+		handleMotorsEncoderCommand(clientId, driverMsg->synnum(), driverMsg->MutableExtension(roboclaw_proto::motorsCommand));
 	}
 }
 
@@ -113,37 +106,17 @@ void RoboclawController::handleCurrentSpeedRequest(int sender, int synNum, amber
 	sendCurrentSpeedMsg(sender, synNum);
 }
 
-void RoboclawController::handleMotorsEncoderCommand(int sender, int synNum, amber::roboclaw_proto::MotorsCommand *motorsCommand) {
+void RoboclawController::handleMotorsEncoderCommand(int sender, int synNum, amber::roboclaw_proto::MotorsQuadCommand *motorsCommand) {
 
-	MotorCommandStruct m1, m2;
+	MotorsCommandStruct mc;
 
 	// m1
-	m1.speed = toQpps(motorsCommand->m1speed());
+	mc.frontLeftSpeed = toQpps(motorsCommand->frontleftspeed());
+	mc.frontRightSpeed = toQpps(motorsCommand->frontrightspeed());
+	mc.rearLeftSpeed = toQpps(motorsCommand->rearleftspeed());
+	mc.rearRightSpeed = toQpps(motorsCommand->rearrightspeed());
 
-	m1.accel_set = motorsCommand->has_m1accel();
-	if (m1.accel_set) {
-		m1.accel = toQpps(motorsCommand->m1accel());
-	}
-
-	m1.distance_set = motorsCommand->has_m1distance();
-	if (m1.distance_set) {
-		m1.distance = toQpps(motorsCommand->m1distance());
-	}
-
-	// m2
-	m2.speed = toQpps(motorsCommand->m2speed());
-
-	m2.accel_set = motorsCommand->has_m2accel();
-	if (m2.accel_set) {
-		m2.accel = toQpps(motorsCommand->m2accel());
-	}
-
-	m2.distance_set = motorsCommand->has_m2distance();
-	if (m2.distance_set) {
-		m2.distance = toQpps(motorsCommand->m2distance());
-	}
-
-	_roboclawDriver->sendMotorsEncoderCommand(motorsCommand->address(), &m1, &m2);
+	_roboclawDriver->sendMotorsEncoderCommand(&mc);
 }
 
 int RoboclawController::toQpps(int in) {
@@ -168,8 +141,8 @@ void RoboclawController::parseConfigurationFile(const char *filename) {
 	desc.add_options()
 			("roboclaw.uart_port", value<string>(&_configuration->uart_port)->default_value("/dev/ttyO3"))
 			("roboclaw.uart_speed", value<unsigned int>(&_configuration->uart_speed)->default_value(38400))
-			("roboclaw.motor1_address", value<unsigned int>(&_configuration->motor1_address)->default_value(128))
-			("roboclaw.motor2_address", value<unsigned int>(&_configuration->motor2_address)->default_value(129))
+			("roboclaw.front_rc_address", value<unsigned int>(&_configuration->front_rc_address)->default_value(128))
+			("roboclaw.rear_rc_address", value<unsigned int>(&_configuration->rear_rc_address)->default_value(129))
 			("roboclaw.motors_max_qpps", value<unsigned int>(&_configuration->motors_max_qpps)->default_value(13800))
 			("roboclaw.motors_p_const", value<unsigned int>(&_configuration->motors_p_const)->default_value(65536))
 			("roboclaw.motors_i_const", value<unsigned int>(&_configuration->motors_i_const)->default_value(32768))
