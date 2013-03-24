@@ -42,7 +42,7 @@ private:
 	amber::DriverMsg *buildCurrentSpeedMsg();
 	void sendCurrentSpeedMsg(int receiver, int ackNum);
 	void handleCurrentSpeedRequest(int sender, int synNum, amber::roboclaw_proto::CurrentSpeedRequest *currentSpeedRequest);
-	void handleMotorsEncoderCommand(int sender, int synNum, amber::roboclaw_proto::MotorsCommand *motorsCommand);
+	void handleMotorsEncoderCommand(int sender, int synNum, amber::roboclaw_proto::MotorsQuadCommand *motorsCommand);
 	void parseConfigurationFile(const char *filename);
 	int toQpps(int in);
 

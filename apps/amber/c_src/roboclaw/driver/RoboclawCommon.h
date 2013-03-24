@@ -20,15 +20,13 @@ struct CurrentSpeedStruct {
 	CurrentSpeedStruct(): m1_speed(0), m2_speed(0) {}
 };
 
-struct MotorCommandStruct {
-	int speed;
+struct MotorsCommandStruct {
 
-	bool accel_set;
-	unsigned int accel;
+	int frontLeftSpeed;
+	int frontRightSpeed;
+	int rearLeftSpeed;
+	int rearRightSpeed;
 
-	bool distance_set;
-	unsigned int distance;
-	bool buffered;
 };
 
 struct RoboclawConfiguration {
@@ -36,8 +34,8 @@ struct RoboclawConfiguration {
 	std::string uart_port;
 	unsigned int uart_speed;
 
-	unsigned int motor1_address;
-	unsigned int motor2_address;
+	unsigned int front_rc_address;
+	unsigned int rear_rc_address;
 
 	unsigned int motors_max_qpps;
 	unsigned int motors_p_const;
