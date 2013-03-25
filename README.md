@@ -41,7 +41,7 @@ Wow. Istnieją.
 Potrzebne są:
 
   - kompilator GCC. Clang być może sobie poradzi,
-  - Erlang w wersji R15B-* lub R16B-*.
+  - Erlang w wersji R15B lub R16B.
 
 Uwagi: Erlang z paczek Ubuntu nie zawiera np. programu `to_erl` -- polecam zainstalować
 paczki ze strony [Erlang Solutions](https://www.erlang-solutions.com/downloads/download-erlang-otp).
@@ -75,9 +75,21 @@ klient jest /jednorazowy/.
     a. Podłącz się do konsoli i wywołaj polecenie `q().` (razem z kropką na końcu).
     b. `killall heart`.
 
-### Klient
+
+### Klient w Erlangu
 
     ./start_client
+
+
+## Klient w Javie
+
+Znajduje się w subrepozytorium. By je pobrać, należy wydać polecenia:
+
+1. `git submodule init` -- zainicjowanie konfiguracji
+2. `git submodule update` -- ściągnięcie podrepozytoriów'
+
+Można też zwyczajnie sklonować repozytorium [mjkpl/amber-java-clients](https://github.com/mjkpl/amber-java-clients).
+
 
 ## Git workflow
 
