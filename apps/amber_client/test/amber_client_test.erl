@@ -64,15 +64,25 @@ prop_msg_from_remote_client_bad_devti() ->
                           Xs))
     end).
 
+
+
+
 msg_send_receive(MsgNumber) ->
   msg_send_receive(MsgNumber, {2,3}).
 
 msg_send_receive(MsgNumber, {DevT, DevI}) ->
+  ModHdrF = fun(X = #drivermsg{}) -> X end,
+  msg_send_receive(MsgNumber, {DevT, DevI}, ModHdrF).
+  
+msg_send_receive(MsgNumber, {DevT, DevI}, ModHdrF) ->
   SynNum = amber_client:get_synnum(),
   Hdr = #driverhdr{devicetype=DevT, deviceid=DevI},
-  MsgBinary = drivermsg_pb:encode_drivermsg(#drivermsg{ type='DATA',
-                                                        synnum=SynNum,
-                                                        acknum=SynNum }), % acknum nie powinno niby być w wysyłanym żądaniu, ale co tam
+  MsgBinary = drivermsg_pb:encode_drivermsg(
+                ModHdrF(
+                        #drivermsg{ type='DATA',
+                                    synnum=SynNum,
+                                    acknum=SynNum }
+              )), % acknum nie powinno niby być w wysyłanym żądaniu, ale co tam
   Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=SynNum},
   Val = #dispd_val{recpid=self()},
 
