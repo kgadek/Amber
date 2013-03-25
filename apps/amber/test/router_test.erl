@@ -55,12 +55,19 @@ prop_pack_unpack() ->
 		end).
 
 prop_msg_from_driver() ->
+	% UWAGA: newralgiczne miejsce, wymaga (nietrywialnej) synchronizacji z settings.conf
+	% 2,3 to numery nodeów
+	send_receive_msg_from_driver([2,3], false).
+
+prop_msg_from_driver_bad_clientids() ->
+	send_receive_msg_from_driver([111,222,333,444,555,666,777,888,999], true).
+
+send_receive_msg_from_driver(ClientIDs, ExpectedFailure) ->
 	?FORALL({Xs,Msg},
-					{list(union([2,3])), binary()}, % UWAGA: newralgiczne miejsce, wymaga (nietrywialnej) synchronizacji z settings.conf
-																					% 2,3 to numery nodeów
+					{list(union(ClientIDs)), binary()},
 					begin
 						Receiver = spawn(fun receiver/0),
-						try
+						Res = try
 							qc_node:qc_set_receiver({qc_node_a}, Receiver),
 							qc_node:qc_set_receiver({qc_node_b}, Receiver),
 							Hdr = #driverhdr{clientids = Xs},
@@ -80,9 +87,14 @@ prop_msg_from_driver() ->
 							qc_node_echo:qc_send({qc_driver_echo_a}, Hdr, Msg),
 							receive
 								{Bool, Ref} -> Bool
-								after 500 -> false
+								after 125 -> false
 							end
 						after Receiver ! stop
+						end,
+						case {ExpectedFailure, length(Xs)} of
+							{true, 0} -> true;
+							{true, _} -> not Res;
+							{false, _} -> Res
 						end
 					end).
 

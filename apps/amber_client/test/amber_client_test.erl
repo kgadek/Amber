@@ -49,19 +49,40 @@ prop_warmup() ->
 
 prop_msg_from_remote_client() ->
   ?FORALL(Xs,
-          list(pos_integer()), % maksymalny przechodzący test: integer(1,22)
+          list(integer(1,80)), % ograniczenie wynikające z rozmiaru bufora UDP
     begin
       lists:all(fun(X) -> X=:=true end,
                 lists:map(fun msg_send_receive/1, Xs))
     end).
 
+prop_msg_from_remote_client_bad_devti() ->
+  ?FORALL(Xs,
+          list(integer(1,2)),
+    begin
+      lists:all(fun(X) -> X=:=false end,
+                lists:map(fun(X) -> msg_send_receive(X,{99,99}) end,
+                          Xs))
+    end).
+
+
+
+
 msg_send_receive(MsgNumber) ->
-  {DevT,DevI} = {2,3},
+  msg_send_receive(MsgNumber, {2,3}).
+
+msg_send_receive(MsgNumber, {DevT, DevI}) ->
+  ModHdrF = fun(X = #drivermsg{}) -> X end,
+  msg_send_receive(MsgNumber, {DevT, DevI}, ModHdrF).
+  
+msg_send_receive(MsgNumber, {DevT, DevI}, ModHdrF) ->
   SynNum = amber_client:get_synnum(),
   Hdr = #driverhdr{devicetype=DevT, deviceid=DevI},
-  MsgBinary = drivermsg_pb:encode_drivermsg(#drivermsg{ type='DATA',
-                                                        synnum=SynNum,
-                                                        acknum=SynNum }), % acknum nie powinno niby być w wysyłanym żądaniu, ale co tam
+  MsgBinary = drivermsg_pb:encode_drivermsg(
+                ModHdrF(
+                        #drivermsg{ type='DATA',
+                                    synnum=SynNum,
+                                    acknum=SynNum }
+              )), % acknum nie powinno niby być w wysyłanym żądaniu, ale co tam
   Key = #dispd_key{dev_t=DevT, dev_i=DevI, synnum=SynNum},
   Val = #dispd_val{recpid=self()},
 
@@ -72,7 +93,8 @@ msg_send_receive(MsgNumber) ->
 counter_acm(MsgNumber,N,DevT,DevI,SynNum) when N>0 ->
   receive #amber_client_msg{hdr=#driverhdr{devicetype=DevT, deviceid=DevI}, msg=#drivermsg{acknum=SynNum}} ->
     counter_acm(MsgNumber,N-1,DevT,DevI,SynNum)
-  after 500 ->
-    ?debugFmt("counter_acm ma jeszcze do otrzymania ~p, dostał n=~p z msgnumber=~p, synnum=~p", [N,MsgNumber-N,MsgNumber,SynNum])
+  after 125 ->
+    ?debugFmt("counter_acm ma jeszcze do otrzymania ~p, dostał n=~p z msgnumber=~p, synnum=~p", [N,MsgNumber-N,MsgNumber,SynNum]),
+    false
   end;
 counter_acm(_,_,_,_,_) -> true.
