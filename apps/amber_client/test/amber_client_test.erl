@@ -49,7 +49,7 @@ prop_warmup() ->
 
 prop_msg_from_remote_client() ->
   ?FORALL(Xs,
-          list(integer(1,80)), % ograniczenie wynikające z rozmiaru bufora UDP
+          list(integer(1,70)), % ograniczenie wynikające z rozmiaru bufora UDP
     begin
       lists:all(fun(X) -> X=:=true end,
                 lists:map(fun msg_send_receive/1, Xs))
