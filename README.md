@@ -36,10 +36,22 @@ Projekt jest w stadium rozwojowym. Wszystkie flagi debugowania są włączone.
 Wow. Istnieją.
 
 
+## Wymagania
+
+Potrzebne są:
+
+  - kompilator GCC. Clang być może sobie poradzi,
+  - Erlang w wersji R15B-* lub R16B-*.
+
+Uwagi: Erlang z paczek Ubuntu nie zawiera np. programu `to_erl` -- polecam zainstalować
+paczki ze strony [Erlang Solutions](https://www.erlang-solutions.com/downloads/download-erlang-otp).
+
+
 ## Pierwsza kompilacja
 
 1. `make all` # ściąga zależności, kompiluje projekt i sterowniki
 1. `make test` # testy
+
 
 ## Następne kompilacje
 
@@ -47,10 +59,12 @@ Wow. Istnieją.
   - `make drivers` # kompiluje wszystkie sterowniki
   - `make roboclaw_drivers` # kompiluje konkretny sterownik
 
+
 ## Uruchamianie
 
 W skrócie: serwer zwykle będzie działać wiecznie (w wypadku awarii sam się zrestartuje),
 klient jest /jednorazowy/.
+
 
 ### Serwer
 

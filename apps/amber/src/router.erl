@@ -114,8 +114,13 @@ handle_cast({send_msg, Sender, #driverhdr{devicetype=DevT, deviceid=DevI}, Msg},
 			{atomic, N_SenderGID} = mnesia:transaction(Q2c),
 			N_SenderGID 
 	end,
-	{atomic, [{RecMod, RecMID}]} = mnesia:transaction(Q2),  
-	RecMod:receive_msg(RecMID, #routing_msg{hdr = #driverhdr{clientids=[SenderGID]}, msg = Msg}),
+	case mnesia:transaction(Q2) of
+		{atomic, [{RecMod, RecMID}]} ->
+			RecMod:receive_msg(RecMID, #routing_msg{hdr = #driverhdr{clientids=[SenderGID]}, msg = Msg});
+		{atomic, Res} ->
+			error_logger:error_msg("Wiadomość od (klienta) ~p (#~p) do (sterownika) (~p,~p) nie może być dostarczona~n"
+			                       "  Wynik z bazy: ~p~n", [Sender, SenderGID, DevT, DevI, Res])
+	end,
 	{noreply, State};
 
 
@@ -131,10 +136,15 @@ handle_cast({send_msg, Sender, #driverhdr{clientids=[C|Cs]} = Hdr, Msg}, State) 
 	Q2 = fun() -> mnesia:select(routing_node,
 		ets:fun2ms(fun(#routing_node{mod_id=MID, id=ID}) when ID =:= C -> MID end))
 	end,
-	{atomic, [{DevT,DevI}]}      = mnesia:transaction(Q1),
-	{atomic, [{RecMod, RecMID}]} = mnesia:transaction(Q2),
-	RecMod:receive_msg(RecMID, #routing_msg{	hdr=Hdr#driverhdr{clientids=[], devicetype=DevT, deviceid=DevI},
-																						msg=Msg}),
+	case {mnesia:transaction(Q1), mnesia:transaction(Q2)} of
+		{{atomic, [{DevT,DevI}]}, {atomic, [{RecMod, RecMID}]}} ->
+			RecMod:receive_msg(RecMID, #routing_msg{	hdr=Hdr#driverhdr{clientids=[], devicetype=DevT, deviceid=DevI},
+																								msg=Msg});
+		{{atomic, ResQ1}, {atomic, ResQ2}} ->
+			error_logger:error_msg("Wiadomość od (sterownika) ~p do (klienta) ~p nie może być dostarczona~n"
+			                       "  Wynik z bazy (sterownik): ~p~n"
+			                       "  Wynik z bazy (klient):    ~p~n", [Sender, C, ResQ1, ResQ2])
+	end,
 	handle_cast({send_msg, Sender, Hdr#driverhdr{clientids=Cs}, Msg}, State);
 
 handle_cast(_, State) ->
