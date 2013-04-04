@@ -5,10 +5,14 @@
 
 %% MNESIA:
 -record(routing_node, {
-	id     :: non_neg_integer(), % identyfikacja węzła; nie jest znana węzłowi
-	mod_id :: {module(), tuple()},
-	dev_ti :: {atom(), atom()} | any(), %% TODO
+	id     :: non_neg_integer()  % identyfikacja węzła; nie jest znana węzłowi
+            | '_' | '$1' | '$2',
+	mod_id :: {module(), tuple()} 
+            | '_' | '$1' | '$2',
+	dev_ti :: {atom(), atom()} | any()  %% TODO
+            | '_' | '$1' | '$2',
 	conf   :: list()             % dodatkowa konfiguracja, na razie nie wykorzystywana
+            | '_' | '$1' | '$2'
 }).
 
 
