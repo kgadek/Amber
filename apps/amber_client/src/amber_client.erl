@@ -70,7 +70,7 @@ code_change(_OldV, State, _Extra) -> {ok, State}.
 
 
 
--spec send_to_amber(binary)
+-spec send_to_amber(<<_:32,_:_*8>>)
 			-> 'ok'.
 send_to_amber(MsgB) -> gen_server:cast(?MODULE, {send_to_amber, MsgB}).
 
