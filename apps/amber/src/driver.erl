@@ -20,9 +20,13 @@ start_node({RegName} = MID, Conf) -> gen_server:start_link({local, RegName}, dri
 receive_msg({RegName}, FullMsg) -> gen_server:cast(RegName, {received, FullMsg}) .
 
 init({MID, Conf}) ->
+
   {cdriver, CDriver} = lists:keyfind(cdriver, 1, Conf),
+  {config_file, ConfigFile} = lists:keyfind(config_file, 1, Conf),
+  {log_config_file, LogConfigFile} = lists:keyfind(log_config_file, 1, Conf),
+
   process_flag(trap_exit, true),
-  Port = open_port({spawn_executable, CDriver}, [{packet, 2}, {args, ["0","1"]}]),
+  Port = open_port({spawn_executable, CDriver}, [{packet, 2}, {args, [ConfigFile, LogConfigFile]}]),
   {ok, #state{port = Port, conf = Conf, mid = MID}}.
 
 handle_cast({received, #routing_msg{hdr=Hdr, msg=Msg}}, #state{port=Port} = State) ->

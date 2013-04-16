@@ -52,7 +52,7 @@ init([]) ->
 	lists:foreach(QN, lists:zipwith(fun(A,B) -> {A,B,make_ref()} end,
 															NodesWR, lists:seq(0,        NodesWRN         -1))),
 	lists:foreach(QD, lists:zip(Drivers, lists:seq(NodesWRN, NodesWRN+DriversN-1))),
-  {ok, { {one_for_all, 30, 30}, [
+  {ok, { {one_for_all, 3, 1}, [
   	?CHILD(comm_sup,   supervisor, [NodesWR]),
   	?CHILD(driver_sup, supervisor, [Drivers])
   ]}}.
